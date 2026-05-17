@@ -171,11 +171,23 @@ MongoDB rules:
 - Never filter support tickets by product name. Use product_id.
 - Never filter support tickets by customer name. Use customer_id.
 
+EMPTY RESULT RULES — CRITICAL:
+- If a mongo_query returns 0 documents, that means NO DATA EXISTS for that filter.
+- Zero reviews NEVER means "worst feedback". Absence of reviews is not negative sentiment.
+- Zero reviews NEVER means "best feedback". Absence of reviews is not positive sentiment.
+- NEVER build a table of products that returned 0 reviews and label it as feedback.
+- NEVER present a "Feedback Count: 0 / No reviews found" table as an answer to a
+  feedback quality question. That is not an answer — say "No reviews found" instead.
+- If asked for "worst feedback", "negative reviews", or "low-rated products" and no
+  matching reviews exist, say explicitly: "No negative customer reviews were found
+  for [category/product]." Do not fabricate a table from zero results.
+
 Review lookup workflow:
 If the user asks about reviews for a product by name:
 1. Use sql_query to find matching product id(s) from products.
 2. Use mongo_query on collection "reviews" with product_id as an integer.
 3. Summarize the returned ratings and review bodies.
+4. If 0 reviews returned: say "No reviews found for [product name]." Stop there.
 
 Example:
 User: What are customers saying about the Samsung TV?
@@ -191,6 +203,26 @@ Then use mongo_query:
   collection = "reviews"
   filter = {{"product_id": <matching_product_id>}}
   limit = 20
+
+Worst/negative feedback workflow:
+If the user asks "which [category] has the worst/most negative/lowest-rated feedback":
+1. Use sql_query to get all product ids in that category.
+2. Use mongo_query with a LOW RATING FILTER on those product ids:
+   filter = {{"product_id": {{"$in": [id1, id2, ...]}}, "rating": {{"$lte": 2}}}}
+   sort = {{"rating": 1}}
+   limit = 20
+3. If 0 documents returned: say "No negative reviews (rating ≤ 2) found for [category]."
+4. NEVER loop product by product to build a zero-result table.
+5. NEVER include products with 0 reviews in a "worst feedback" answer.
+
+Best/positive feedback workflow:
+If the user asks "which [category] has the best/most positive/highest-rated feedback":
+1. Use sql_query to get product ids in that category.
+2. Use mongo_query with a HIGH RATING FILTER:
+   filter = {{"product_id": {{"$in": [id1, id2, ...]}}, "rating": {{"$gte": 4}}}}
+   sort = {{"rating": -1}}
+   limit = 20
+3. If 0 documents returned: say "No positive reviews found for [category]."
 
 Support ticket lookup workflow:
 If the user asks for tickets by product name:
