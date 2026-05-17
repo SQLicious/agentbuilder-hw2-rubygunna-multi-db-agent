@@ -33,6 +33,18 @@ The agent never connects to any data store directly. Every read goes through one
 
 **Schema strategy:** Pattern A (static system-prompt context). The full SQL and MongoDB schema is injected into the system prompt at startup. Schema is small enough (~500 tokens) that in-context grounding is cheaper and more deterministic than a describe_schema tool round-trip. Pattern B would be preferable at larger schema sizes.
 
+**Handbook storage: Python strings over PDF files.** Policy documents are defined as structured Python strings in `backend/seed/handbook_docs.py` rather than loaded from PDFs. Four concrete reasons:
+
+1. **Clean text, no extraction noise.** PDF parsing libraries (pdfplumber, pypdf) introduce extraction artifacts — broken hyphenation, merged words, misread tables, stripped formatting. Policy text stored as Python strings is exactly what gets embedded, with no silent corruption between authoring and retrieval.
+
+2. **Deterministic, testable chunking.** The paragraph-boundary chunker in `seed_handbook.py` produces identical chunks on every run. PDF-derived text varies by library version, font encoding, and page layout, making chunking non-reproducible and hard to test.
+
+3. **Version-controlled diffs.** Python string changes produce readable git diffs — a reviewer can see exactly what policy text changed. PDFs are binary blobs: a one-word edit produces a multi-kilobyte binary diff with no semantic signal.
+
+4. **No added dependency.** PDF parsing requires an additional library that adds install weight and potential CVEs. For a self-contained homework project with five policy sections, the overhead is not justified.
+
+**Trade-off acknowledged:** In a production system where non-technical staff author policy documents in Word or Acrobat, PDF ingestion is the correct choice — it meets the authors where they are. The Python-string approach would force a developer to act as intermediary for every policy update, which does not scale. This implementation is the right fit for a controlled, developer-owned dataset.
+
 ---
 
 ## 3. The Three Tools and Their Contracts
