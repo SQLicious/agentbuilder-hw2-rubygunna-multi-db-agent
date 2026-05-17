@@ -4,6 +4,7 @@ A fresh agent instance is built per /chat request. This is cheap (it's just
 wiring) and keeps the codebase free of long-lived shared state.
 """
 from __future__ import annotations
+from datetime import date
 from typing import Any
 
 from langchain.agents import create_agent
@@ -16,7 +17,11 @@ from backend.tools.mongo_tool import mongo_query as _mongo_query
 from backend.tools.handbook_tool import handbook_search as _handbook_search
 
 
-SYSTEM_PROMPT = """You are an electronics store assistant.
+def _system_prompt() -> str:
+    today = date.today().isoformat()
+    return f"""You are an electronics store assistant.
+
+Today's date is {today}.
 
 You have three tools:
 - sql_query(query: str)                  — read-only SELECT against Postgres for
@@ -101,5 +106,5 @@ def build_agent():
     return create_agent(
         model=_build_chat_model(),
         tools=[_SQL_TOOL, _MONGO_TOOL, _HANDBOOK_TOOL],
-        system_prompt=SYSTEM_PROMPT,
+        system_prompt=_system_prompt(),
     )
