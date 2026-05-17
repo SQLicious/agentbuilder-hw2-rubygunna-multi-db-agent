@@ -11,7 +11,6 @@ wheels/
 
 # Environment files (real secrets)
 .env
-..env
 
 # Brainstorm sessions
 .superpowers/
