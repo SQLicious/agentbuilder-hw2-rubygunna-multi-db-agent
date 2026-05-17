@@ -81,16 +81,18 @@ The only truly separate data store in this project is MongoDB Atlas. We have two
 
 ---
 
-### 3.2 `mongo_query(collection: str, filter: dict, limit: int = 20) → dict`
+### 3.2 `mongo_query(collection: str, filter: dict, limit: int = 20, sort: dict | None = None) → dict`
 
 **Input:**
 - `collection: str` — must be in whitelist: `["reviews", "support_tickets", "activity_logs"]`
 - `filter: dict` — MongoDB filter document
 - `limit: int` — capped at 50
+- `sort: dict | None` — optional sort spec; keys are field names, values must be `1` (asc) or `-1` (desc). Example: `{"rating": -1}` for highest-rated first.
 
 **Validation (rejects with error string):**
 - Collection not in whitelist
-- Filter contains `$where` or `$function` (no server-side JS)
+- Filter or sort contains `$where`, `$function`, or `$accumulator` (no server-side JS)
+- Sort values other than `1` or `-1`
 - Limit > 50 → clamped to 50
 
 **Return shape:**
@@ -99,6 +101,9 @@ The only truly separate data store in this project is MongoDB Atlas. We have two
 ```
 
 **Error surface:** Returns `{ "error": "reason" }` — never raises.
+
+**Decision — sort deferred until backend supported it:**
+Sort was not exposed in the agent wrapper until `MongoInput` (the Pydantic schema) and the tool function both accepted a `sort` argument. Adding sort only in the agent wrapper while the underlying tool still used a 3-field schema would cause Pydantic `ValidationError` on every MongoDB call at runtime, silently breaking the agent. The backend (`mongo_tool.py`) was updated first, then the agent wrapper, to ensure the contract was always internally consistent.
 
 ---
 
@@ -124,28 +129,19 @@ The only truly separate data store in this project is MongoDB Atlas. We have two
 
 ## 4. Routing Rules (System Prompt)
 
-```
-You are an electronics store assistant. You have three tools:
+The agent is named **VoltIQ Concierge**. The system prompt in `backend/agent.py` has been significantly expanded from the original sketch below. The full version includes: explicit data ownership rules (which tables live where), SQL query rules and join patterns, MongoDB multi-step lookup workflows, tool routing table, error handling rules, and answer formatting rules. The summary routing intent remains:
 
-- sql_query: Use for structured data — product inventory, orders, customers, 
-  pricing, stock counts. Always use SELECT only.
+- `sql_query` — structured relational data: products, orders, customers, inventory, sales/revenue.
+- `mongo_query` — document data: reviews, support tickets, activity logs. Supports an optional `sort` argument.
+- `handbook_search` — policy and procedure questions: returns, refunds, warranty, shipping, tech support.
 
-- mongo_query: Use for unstructured/activity data — customer reviews, 
-  support tickets, user activity logs.
+**Data ownership rules (enforced in system prompt):**
+- Postgres/Supabase contains ONLY: `products`, `orders`, `customers`.
+- MongoDB contains ONLY: `reviews`, `support_tickets`, `activity_logs`.
+- Policy text is accessed ONLY through `handbook_search`.
+- Cross-store lookups (e.g., reviews by product name) require a SQL lookup first to get the integer `product_id`, then a MongoDB query using that id.
 
-- handbook_search: Use for policy and procedural questions — return policy, 
-  warranty terms, shipping policy, tech support FAQ.
-
-## SQL Schema
-Table: products (id, name, category, price, stock_qty, brand)
-Table: orders (id, customer_id, product_id, qty, status, created_at)
-Table: customers (id, name, email, created_at)
-
-## MongoDB Schema
-Collection: reviews (product_id, rating, body, created_at)
-Collection: support_tickets (customer_id, subject, status, messages[])
-Collection: activity_logs (customer_id, event_type, metadata, timestamp)
-```
+See `backend/agent.py → _system_prompt()` for the full prompt text.
 
 ---
 

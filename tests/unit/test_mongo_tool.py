@@ -60,7 +60,7 @@ def test_sort_applied_when_provided():
     mock_db = MagicMock()
     mock_db["reviews"].find.return_value = mock_cursor
 
-    with patch("backend.tools.mongo_tool.get_db", return_value=mock_db):
+    with patch("backend.db.mongo.get_db", return_value=mock_db):
         result = mongo_query.invoke({"collection": "reviews", "filter": {}, "limit": 10, "sort": {"rating": -1}})
 
     mock_cursor.sort.assert_called_once_with([("rating", -1)])
@@ -73,7 +73,7 @@ def test_sort_skipped_when_empty():
     mock_db = MagicMock()
     mock_db["reviews"].find.return_value = mock_cursor
 
-    with patch("backend.tools.mongo_tool.get_db", return_value=mock_db):
+    with patch("backend.db.mongo.get_db", return_value=mock_db):
         result = mongo_query.invoke({"collection": "reviews", "filter": {}, "limit": 10, "sort": {}})
 
     mock_cursor.sort.assert_not_called()

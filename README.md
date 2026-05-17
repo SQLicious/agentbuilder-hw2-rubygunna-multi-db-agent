@@ -73,7 +73,7 @@ Browser
                                     │     └─► Supabase Postgres (psycopg2)
                                     │         tables: products, orders, customers
                                     │
-                                    ├─► mongo_query(collection, filter, limit)
+                                    ├─► mongo_query(collection, filter, limit, sort)
                                     │     └─► MongoDB Atlas (pymongo)
                                     │         db: ecommerce
                                     │         collections: reviews, support_tickets,
@@ -167,10 +167,10 @@ The five sample questions from `SPEC.md` are tested in `tests/e2e/test_e2e.py` b
 backend/
   config.py          — pydantic-settings, loads .env
   main.py            — FastAPI app + /chat endpoint
-  agent.py           — LangChain v1 agent (build_agent + @tool wrappers)
+  agent.py           — VoltIQ Concierge agent (build_agent + @tool wrappers, full system prompt)
   tools/
     sql_tool.py      — sql_query: read-only SELECT, auto-LIMIT, 5s timeout
-    mongo_tool.py    — mongo_query: collection whitelist, operator blacklist
+    mongo_tool.py    — mongo_query: collection whitelist, operator blacklist, sort support
     handbook_tool.py — handbook_search: pgvector cosine similarity
   db/
     postgres.py      — psycopg2 connection context manager
@@ -200,10 +200,12 @@ SPEC.md              — written before any code (tool contracts, routing rules,
 ## Test Results
 
 ```
-tests/unit/         21 passed   (validate_sql, inject_limit, validate_mongo,
-                                 clamp_limit, clamp_k, handbook mock)
-tests/integration/   9 passed   (real Supabase + Atlas reads)
+tests/unit/         27 passed   (validate_sql, inject_limit, validate_mongo,
+                                 clamp_limit, sort validation, cursor.sort mock,
+                                 clamp_k, handbook mock)
+tests/integration/  11 passed   (real Supabase + Atlas reads, sort ordering,
+                                 invalid sort direction)
 tests/e2e/           7 passed   (full agent loop, all 5 sample questions)
 ─────────────────────────────
-Total               37 passed
+Total               45 passed
 ```
