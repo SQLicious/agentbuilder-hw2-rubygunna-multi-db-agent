@@ -1,172 +1,199 @@
-# Homework 2: Build the Multi-DB Agent
+# HW2 — Multi-DB Electronics Store Agent
 
-**Due: Friday, 17 May 2026, 11:59 PM your local time.**
-Current date : 17 May 2026 
+**Ruby Gunna · Agent Builder 2026 · HW2 Submission**
 
-## What this homework is about
+A full-stack AI agent that answers questions about an electronics store by routing across three data sources: a SQL database (Supabase Postgres), a NoSQL database (MongoDB Atlas), and a vector handbook (pgvector RAG). Built with FastAPI, LangChain v1, and a React split-panel chat UI.
 
-In class, we built the **SkyNova Airlines** customer-service agent end to end. A single ReAct loop that can pull from a **SQL** database (passengers, flights, bookings), a **NoSQL** database (support tickets, reviews, activity logs), and a **vector handbook** (RAG over policy documents). One question in, one grounded answer out, with the receipts.
+---
 
-Your homework is to **build the same project yourself, from scratch**. Run it against real databases, write tests for it, and demo it.
+## Quick Start
 
-This is the homework where the cohort splits into two groups: people who can ship an agent, and people who can talk about agents. Pick which group you want to be in.
+```bash
+# 1. Install dependencies
+uv sync --extra dev
 
-## What you are building
+# 2. Copy and fill in credentials
+cp .env.example .env
 
-A small full-stack app with three parts.
+# 3. Verify database connections
+.venv/Scripts/python.exe check_connectivity.py
 
-### 1. Backend
+# 4. Seed all three stores (only needed once)
+.venv/Scripts/python.exe -m backend.seed.seed_postgres
+.venv/Scripts/python.exe -m backend.seed.seed_mongo
+.venv/Scripts/python.exe -m backend.seed.seed_handbook
 
-- **FastAPI** server with a single `POST /chat` endpoint.
-- **LangChain v1** ReAct agent (`create_agent`), using **OpenAI `gpt-4o-mini`** by default. You may swap models, but document the swap.
-- **Three tools**, each with Pydantic-typed arguments:
-  1. `sql_query`: read-only SELECT against **Supabase Postgres** (or any Postgres). Must reject writes, multi-statements, and dangerous keywords. Auto-injects a `LIMIT` if missing. Has a statement timeout.
-  2. `mongo_query`: typed args against **MongoDB Atlas** (or local Mongo). Has a collection whitelist. Caps the result count. If aggregation is allowed, restrict it to safe stages (`$match`, `$group`, `$sort`, `$limit`, `$project`). No server-side JS.
-  3. `handbook_search`: vector RAG over **pgvector** using `text-embedding-3-small`. Returns top-k chunks with their section labels.
-- The endpoint returns `{answer, tool_calls, warnings, elapsed_ms}`. Yes, you must include `tool_calls` in the response so the frontend can show what the agent actually did.
+# 5. Start backend
+.venv/Scripts/python.exe -m uvicorn backend.main:app --reload --port 8000
 
-### 2. Frontend
-
-- **Vite + React + TypeScript** chat UI. Tailwind is optional but recommended.
-- The UI must show three things: the user's question, the agent's final answer, and the **tool call trace** (which tool was called, with what arguments, and what came back).
-- No auth required. No streaming required. No multi-turn memory required. Single turn is fine.
-
-### 3. Data
-
-- Seed data for all three stores. You can pick your own domain (does not have to be airlines), but pick a domain with enough variety that all three tools get exercised.
-- A handful of handbook documents to chunk and embed.
-
-### 4. Tests
-
-- **pytest**, organized into `unit/`, `integration/`, and `e2e/` folders.
-- Mock the LLM at the unit level. LangChain's `GenericFakeChatModel` works well for this.
-- At least one e2e test that runs a real question through the full agent loop.
-
-## Reference architecture (what we built in class)
-
-```
-Browser -> React UI -> FastAPI -> LangChain v1 ReAct agent -> [sql_query | mongo_query | handbook_search] -> live store
+# 6. Start frontend (new terminal)
+cd frontend && npm install && npm run dev
 ```
 
-The agent **never** connects to the data stores directly. Every read goes through one of the three typed tools. This is the part most students get wrong on the first attempt. If your agent has a `psycopg` connection in its hand, you have broken the pattern.
+Open `http://localhost:5173`. Backend health check: `http://localhost:8000/health`.
 
-## What to do
+### Run tests
 
-### Step 1. Spec before code (30 minutes, mandatory)
+```bash
+# Unit tests (no DB required)
+.venv/Scripts/python.exe -m pytest tests/unit/ -v
 
-Before you run `uv init`, write a `SPEC.md` in your repo. It should contain:
+# Integration tests (requires seeded DBs)
+.venv/Scripts/python.exe -m pytest tests/integration/ -v
 
-1. **Problem statement.** Who is the user, and what kinds of questions do they ask the agent?
-2. **The 3 tools and their contracts.** For each tool: input arguments (with types), return shape, and how errors are surfaced.
-3. **Routing rules.** What does the system prompt tell the agent about when to call which tool?
-4. **Definition of done.** Five sample questions you will test against, with the expected answer shape (which tool gets called, what fields appear in the answer).
+# E2E tests (requires running backend + seeded DBs + OpenAI key)
+.venv/Scripts/python.exe -m pytest tests/e2e/ -v
+```
 
-This file gets committed to your repo. Reviewers will read it first. If your spec is "build an agent like in class", you have already lost the homework.
+### Environment variables required
 
-### Step 2. Build it incrementally
+```
+OPENAI_API_KEY=sk-...
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<pooler-host>:5432/postgres
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_KEY=sb_secret_...
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/ecommerce
+```
 
-Do not try to wire everything at once. Stand it up in this order:
+> **Note on DATABASE_URL:** Use the Supabase **Session Pooler** URL (from dashboard → Connect button), not the direct connection. Direct port 5432 is blocked on many networks. If your password contains `@`, URL-encode it as `%40`.
 
-1. FastAPI hello world. `POST /chat` returning a stub response.
-2. One tool working in isolation. Start with `sql_query` because it is the simplest.
-3. Wire a LangChain ReAct agent that uses just that one tool. Get a real question answered end to end.
-4. Add the second tool, then the third.
-5. Frontend last. It is the easy part once the backend works.
+---
 
-Commit after each step. Reviewers will read your `git log`.
+## Architecture
 
-### Step 3. Test it
+```
+Browser
+  └─► React / Vite / TypeScript
+        Split panel: chat (left) + tool trace (right)
+        └─► POST /chat  →  FastAPI (port 8000)
+                              └─► LangChain v1 agent  (gpt-4o-mini)
+                                  create_agent() — fresh instance per request
+                                    │
+                                    ├─► sql_query(query)
+                                    │     └─► Supabase Postgres (psycopg2)
+                                    │         tables: products, orders, customers
+                                    │
+                                    ├─► mongo_query(collection, filter, limit)
+                                    │     └─► MongoDB Atlas (pymongo)
+                                    │         collections: reviews, support_tickets,
+                                    │                      activity_logs
+                                    │
+                                    └─► handbook_search(query, k)
+                                          └─► pgvector on Supabase
+                                              table: handbook_chunks (1536-dim)
+                                              model: text-embedding-3-small
 
-Minimum bar:
+Response: { answer, tool_calls, warnings, elapsed_ms }
+```
 
-- One unit test per tool. Cover good inputs, malformed inputs, and dangerous inputs.
-- One integration test per tool that hits a real test database.
-- One e2e test that runs your five sample questions from `SPEC.md` end to end.
+The agent **never** connects to any data store directly. Every read goes through one of the three typed tools. Tool wrappers in `agent.py` call through to the validated implementations in `backend/tools/`.
 
-If you can write more, great. The goal is "I actually verified this works", not "I have 90% coverage".
+**Schema strategy:** Pattern A — full SQL and MongoDB schema injected into the system prompt at startup (~500 tokens). Pattern B (describe_schema tool) would be preferable at larger schema sizes but adds a round-trip per query.
 
-### Step 4. Demo it
+**Handbook storage:** Python strings in `handbook_docs.py` → chunked by paragraph → embedded with `text-embedding-3-small` → stored in `handbook_chunks` table. Chose this over PDF ingestion because: (1) no extraction artifacts, (2) deterministic chunking that's testable, (3) readable git diffs, (4) no extra dependency. Trade-off: a production system with non-technical policy authors would need real PDF ingestion.
 
-Record a short screen capture (2 to 4 minutes is plenty) showing:
+---
 
-1. The UI loading.
-2. A question that hits the **SQL** tool. Show the tool trace.
-3. A question that hits the **NoSQL** tool. Show the tool trace.
-4. A question that hits the **RAG** tool. Show the tool trace.
-5. One question that the agent gets **wrong** or partially wrong, and your reaction to it.
+## Why I Chose X
 
-That last one is the most important. Anyone can demo a happy path. Show us you have actually used the thing.
+**Domain — Electronics Store**
+Rich enough that all three tools get exercised naturally. "How many laptops in stock?" hits SQL. "What are customers saying about the Samsung TV?" hits MongoDB reviews. "What's the return policy?" hits the handbook. An airline domain was excluded per assignment constraints.
 
-If you genuinely cannot record video, post 4 to 5 screenshots that cover the same five flows. Video is strongly preferred.
+**Model — gpt-4o-mini**
+Assignment default. Fast, cheap, and sufficient for tool-calling over structured schemas. For production I would evaluate `gpt-4o` on the cases where `gpt-4o-mini` picks the wrong tool or generates invalid SQL.
 
-### Step 5. Write up your findings
+**SQL DB — Supabase (Postgres + pgvector)**
+One service covers both the relational store and the vector store for RAG. This avoids running a separate vector DB (Pinecone, Weaviate) and keeps the infrastructure surface small. The pgvector `<=>` cosine operator integrates directly with psycopg2.
 
-In your repo's main `README.md`, include sections for:
+**NoSQL DB — MongoDB Atlas**
+Cloud-hosted, free tier, straightforward Python driver. The document model fits unstructured data like support ticket message threads and activity event logs that would be awkward to normalise into Postgres.
 
-1. **Architecture.** Your version of the diagram above. A hand-drawn sketch is fine.
-2. **Why I chose X.** Your model, your databases, your domain.
-3. **What broke and how I fixed it.** The three best war stories from the build.
-4. **What I would change if I had another week.** Be specific. "Add caching" is not specific. "Cache the embedding for repeat questions, since I noticed I re-embed the same query twice per session" is specific.
+**LangChain version — 1.x (`create_agent`)**
+Installed version was LangChain 1.3.1. The old `create_react_agent` + `AgentExecutor` pattern (0.1.x) is removed. LangChain 1.x uses `langchain.agents.create_agent` which delegates to LangGraph under the hood and uses native tool-calling instead of the text-based ReAct prompt format. This is more reliable — the model no longer needs to format `Action / Action Input / Observation` strings correctly.
 
-### Step 6. Submit
+---
 
-In this order:
+## What Broke and How I Fixed It
 
-1. Push everything to your public GitHub repo. Confirm the README, `SPEC.md`, code, tests, and demo links are all present.
-2. Create a post in the Skool community in the **Homework** category. Title format: `HW2 Submission - YourName`. The post must include:
-   - One-line summary of what you built
-   - Link to your public repo
-   - The demo video, embedded or linked (Loom, YouTube unlisted, Google Drive, your call)
-   - 2 to 3 sentences on what was the hardest part of the build
-3. Drop the link to your Skool post as a comment under the **HW2 Assignment Thread** in Skool.
+**1. Supabase direct connection timed out**
 
-If any of these three steps is missing, the submission is incomplete.
+Direct TCP to `db.<project>.supabase.co:5432` timed out immediately — the ISP blocks outbound port 5432. The error looked like a flaky network issue but was completely deterministic.
 
-## Deliverables checklist
+Fix: switched `DATABASE_URL` to the Supabase **Session Pooler** endpoint (`aws-1-us-east-2.pooler.supabase.com:5432`). The pooler URL also requires the username to include the project ref: `postgres.<project-ref>` instead of just `postgres`. Found this in the dashboard under the green **Connect** button, not under Settings → Database where I was originally looking.
 
-Before you hit submit, confirm all of the following:
+**2. LangChain 1.x removed `create_react_agent` and `AgentExecutor`**
 
-- [ ] Public GitHub repo (your own; not a fork of the class repo)
-- [ ] `SPEC.md` written **before** any code, committed near the start of your `git log`
-- [ ] Working backend (FastAPI + LangChain v1 + 3 tools)
-- [ ] Working frontend (chat UI showing the tool-call trace)
-- [ ] Seed data and load scripts for all three stores
-- [ ] At least one unit test per tool, plus one e2e test
-- [ ] `.env.example` listing required keys (no real secrets in git)
-- [ ] `README.md` covering setup, architecture, decisions, and findings
-- [ ] Demo video or screenshots showing all three tools in action **and** one failure case
-- [ ] Skool post in the Homework category with everything above
-- [ ] Skool post link added as a comment on the HW2 Assignment Thread
+The plan used the LangChain 0.1.x API (`create_react_agent` + `AgentExecutor`). The installed version (1.3.1) removed both. A compatibility shim (`langchain_classic`) exists but it passes the raw JSON `Action Input` string directly to the tool function without parsing it through the Pydantic schema — so every query arrived as `'{"query": "SELECT..."}'` instead of `'SELECT...'`, and `validate_sql` rejected it with "Only SELECT statements are allowed."
 
-## How this gets reviewed
+Fix: rewrote `agent.py` using `langchain.agents.create_agent` (LangChain 1.x native), which uses tool-calling (function calling) instead of the ReAct text format. The agent now sends structured JSON directly to each tool's Pydantic schema — no string-parsing issues. Also restructured to match the instructor's pattern: `@tool` wrappers in `agent.py` calling through to the underlying validated functions, `build_agent()` returning a fresh agent per request.
 
-| Area | Weight | What we check |
-|---|---|---|
-| Spec quality | 20% | `SPEC.md` shows real thinking before coding. Tool contracts are concrete. Sample questions are realistic. |
-| It runs | 25% | Fresh clone, follow your README, working agent. Reviewers will actually do this. |
-| Tool design | 20% | Read-only is enforced. Inputs are validated. Errors do not crash the agent loop. The agent never bypasses a tool. |
-| Tests | 10% | At least the minimum bar (one per tool plus one e2e). They actually pass. |
-| Demo + write-up | 15% | Demo covers all three tools and one failure case. Findings are specific to your build. |
-| Hygiene | 10% | No secrets in git. Clean `git log` showing iterative work. README is friendly to a stranger trying to run it. |
+**3. DATABASE_URL password with a special character broke the connection string**
 
-## Common mistakes to avoid
+The Supabase database password contained `@`. A PostgreSQL connection URL uses `@` as the delimiter between credentials and host, so `postgresql://postgres:pass@word@host` is parsed as username `postgres`, password `pass`, host `word@host` — which doesn't resolve.
 
-1. Skipping `SPEC.md` and diving into code. The empty file in your repo will cost you 20% off the top.
-2. Letting the agent run raw SQL the LLM wrote, with no validation. One `DROP TABLE` and your demo is over.
-3. Hardcoding `.env` values in `settings.py` to "make it easier for the grader". This will cost you points.
-4. Submitting a single `feat: initial commit` with thousands of lines. We want to see the build, not the final state.
-5. Having Claude, Cursor, or Codex generate the whole project in one shot and submitting without reading it. We may ask you to walk through any file in your demo, and you will need to be able to.
-6. Skipping the demo because "it works locally". If we cannot see it work, it does not.
+Fix: URL-encode the `@` as `%40`. Diagnosed by printing the parsed host from the connection string, not from the error message (which just said "could not connect"). Added the pooler hint with URL-encoding note to `check_connectivity.py` so the next person hits this immediately instead of after 30 minutes of debugging.
 
-## Stretch goals (optional, for the showcase round)
+---
 
-If you finish early and want to push further:
+## What I Would Change With Another Week
 
-1. **Streaming responses** so the UI shows the agent's reasoning as it goes.
-2. **Multi-turn memory** with proper conversation summarization.
-3. **Auth.** Even a minimal JWT flow, just to see the pattern.
-4. **A fourth tool.** File search, web search, or anything that makes sense for your domain.
-5. **Eval harness.** Run your five sample questions on every commit and track pass/fail over time.
+**1. Agent instance caching per session**
+`build_agent()` is called fresh on every `/chat` request. Building the compiled LangGraph object takes ~100ms and re-initialises the LLM client each time. With session identifiers, a cached agent per user would eliminate that overhead and enable multi-turn memory without rebuilding the graph.
 
-These are not required. Get the base build solid first, then attempt these only if you have time.
+**2. PDF ingestion pipeline for the handbook**
+The handbook is currently maintained as Python strings in `handbook_docs.py`. A document manager who isn't a developer can't update policy without a code change. I would add a `scripts/ingest_pdf.py` that takes a PDF path, extracts text with `pdfplumber`, chunks by section heading, embeds, and upserts into `handbook_chunks`. This makes the RAG pipeline usable by non-technical staff.
 
+**3. Streaming responses**
+The UI waits for the full agent response before showing anything. For questions that chain multiple tool calls, this can take 10-15 seconds of silence. Adding `StreamingResponse` from FastAPI and `useEventSource` in React would show each tool result as it arrives, which is dramatically better UX and makes the agent's reasoning visible during the wait.
+
+**4. Evaluation harness on CI**
+The five sample questions from `SPEC.md` are tested in `tests/e2e/test_e2e.py` but only assert that the correct tool was called — not that the answer is correct. I would add an LLM-as-judge step that scores the answer against an expected schema (e.g., "must contain a number", "must mention 30 days"), and track pass/fail per question across commits so regressions in answer quality are caught automatically.
+
+---
+
+## Project Structure
+
+```
+backend/
+  config.py          — pydantic-settings, loads .env
+  main.py            — FastAPI app + /chat endpoint
+  agent.py           — LangChain v1 agent (build_agent + @tool wrappers)
+  tools/
+    sql_tool.py      — sql_query: read-only SELECT, auto-LIMIT, 5s timeout
+    mongo_tool.py    — mongo_query: collection whitelist, operator blacklist
+    handbook_tool.py — handbook_search: pgvector cosine similarity
+  db/
+    postgres.py      — psycopg2 connection context manager
+    mongo.py         — PyMongo singleton (thread-safe)
+  seed/
+    seed_postgres.py — schema + 10 products, 5 customers, 20 orders
+    seed_mongo.py    — 10 reviews, 5 support tickets, 6 activity logs
+    seed_handbook.py — chunk + embed 5 policy sections → pgvector
+    handbook_docs.py — raw policy text (Return Policy, Warranty, etc.)
+tests/
+  unit/              — pure-function tests, no DB (21 tests)
+  integration/       — real DB reads (9 tests)
+  e2e/               — full agent loop via TestClient (7 tests)
+frontend/
+  src/
+    App.tsx          — split-panel layout
+    components/
+      ChatPanel.tsx  — chat input + message history
+      ToolTrace.tsx  — collapsible tool call cards
+    api.ts           — axios POST to /chat
+check_connectivity.py — smoke test both DBs, prints PASS/FAIL
+SPEC.md              — written before any code (tool contracts, routing rules, sample Qs)
+```
+
+---
+
+## Test Results
+
+```
+tests/unit/         21 passed   (validate_sql, inject_limit, validate_mongo,
+                                 clamp_limit, clamp_k, handbook mock)
+tests/integration/   9 passed   (real Supabase + Atlas reads)
+tests/e2e/           7 passed   (full agent loop, all 5 sample questions)
+─────────────────────────────
+Total               37 passed
+```
