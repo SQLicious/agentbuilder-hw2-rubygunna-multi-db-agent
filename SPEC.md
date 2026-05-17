@@ -35,7 +35,13 @@ Response shape: { answer, tool_calls, warnings, elapsed_ms }
 
 The agent never connects to any data store directly. Every read goes through one of the three typed tools.
 
-**Important:** `sql_query` and `handbook_search` both connect to the **same Supabase Postgres instance** via the same `DATABASE_URL`. pgvector is a Postgres extension (`CREATE EXTENSION IF NOT EXISTS vector`) enabled within Supabase — it is not a separate vector database. This means our two "Postgres" tools share one connection pool and one Supabase project. The only truly separate data store is MongoDB Atlas.
+**pgvector implementation decision:** The homework specification calls for `handbook_search` to use pgvector. pgvector is a Postgres extension — it cannot run independently; it requires a Postgres host. The specification also calls for `sql_query` to run against Supabase Postgres. Since Supabase enables pgvector natively on all projects at no extra cost, running both tools against the same Supabase instance was the correct choice. This means:
+
+- `sql_query` and `handbook_search` share the same `DATABASE_URL` and the same psycopg2 connection — zero extra credentials, zero extra service
+- The `handbook_chunks` table (vector store) lives in the same Postgres database as `products`, `orders`, and `customers` — one schema, one backup, one connection pool
+- No separate vector database (Pinecone, Weaviate, Qdrant, Chroma) is introduced — each would add cloud credentials, a new SDK, extra latency, and a separate failure point without satisfying the pgvector requirement any better
+
+The only truly separate data store in this project is MongoDB Atlas. We have two cloud services total, serving three logical tool routes.
 
 **Schema strategy:** Pattern A (static system-prompt context). The full SQL and MongoDB schema is injected into the system prompt at startup. Schema is small enough (~500 tokens) that in-context grounding is cheaper and more deterministic than a describe_schema tool round-trip. Pattern B would be preferable at larger schema sizes.
 

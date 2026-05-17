@@ -105,8 +105,15 @@ Rich enough that all three tools get exercised naturally. "How many laptops in s
 **Model — gpt-4o-mini**
 Assignment default. Fast, cheap, and sufficient for tool-calling over structured schemas. For production I would evaluate `gpt-4o` on the cases where `gpt-4o-mini` picks the wrong tool or generates invalid SQL.
 
-**SQL DB — Supabase (Postgres + pgvector)**
-One service covers both the relational store and the vector store for RAG. This avoids running a separate vector DB (Pinecone, Weaviate) and keeps the infrastructure surface small. The pgvector `<=>` cosine operator integrates directly with psycopg2.
+**Vector store — pgvector on Supabase, not a standalone vector DB**
+The spec requires pgvector specifically. pgvector is a Postgres extension (`CREATE EXTENSION IF NOT EXISTS vector`) — it runs inside Postgres, not as a standalone service. Since the spec also requires Supabase Postgres for SQL, and Supabase enables pgvector natively on every project, using the same Supabase instance for both tools was the only decision that satisfied all constraints simultaneously.
+
+Alternatives considered and rejected:
+- **Pinecone / Weaviate / Qdrant / Chroma** — do not satisfy the pgvector requirement; add an extra cloud service, extra credentials, and extra SDK with no benefit
+- **Local Postgres + pgvector** — requires Docker or a local install; breaks `git clone → run` for graders on a fresh machine
+- **Separate Supabase project for vectors** — same cost, same service, just splits the schema across two projects for no reason
+
+Result: two cloud services total (Supabase + MongoDB Atlas), three logical tool routes, one `DATABASE_URL` shared between `sql_query` and `handbook_search`. The `handbook_chunks` table lives alongside `products`, `orders`, and `customers` in the same schema — one connection pool, one backup, zero extra infrastructure.
 
 **NoSQL DB — MongoDB Atlas**
 Cloud-hosted, free tier, straightforward Python driver. The document model fits unstructured data like support ticket message threads and activity event logs that would be awkward to normalise into Postgres.
