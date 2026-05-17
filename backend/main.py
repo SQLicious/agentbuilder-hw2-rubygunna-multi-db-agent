@@ -1,7 +1,8 @@
 import time
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from backend.agent import run_agent
 
 app = FastAPI(title="Electronics Store Agent")
 
@@ -19,7 +20,7 @@ class ChatRequest(BaseModel):
 
 class ToolCall(BaseModel):
     tool: str
-    args: dict
+    args: dict | str
     result: dict | str
 
 
@@ -37,9 +38,18 @@ def health():
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="message cannot be empty")
+
+    start = time.time()
+    try:
+        result = run_agent(req.message)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     return ChatResponse(
-        answer=f"[stub] You asked: {req.message}",
-        tool_calls=[],
-        warnings=[],
-        elapsed_ms=0,
+        answer=result["answer"],
+        tool_calls=result["tool_calls"],
+        warnings=result["warnings"],
+        elapsed_ms=int((time.time() - start) * 1000),
     )
