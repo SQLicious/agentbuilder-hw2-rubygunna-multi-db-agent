@@ -161,6 +161,12 @@ The five sample questions from `SPEC.md` are tested in `tests/e2e/test_e2e.py` b
 
 ---
 
+## UI Disclaimer — Placeholder Nav Items
+
+The VoltIQ Concierge landing page navigation bar contains five links: **Features**, **Use Cases**, **Data Sources**, **Security**, and **Docs**. The first three scroll to the relevant sections on the page. **Security** and **Docs** are intentional placeholders wired for future enhancement — they currently anchor to the footer. No security page or documentation site has been built. These links are included to reflect the intended product surface and will be developed in a future iteration.
+
+---
+
 ## Project Structure
 
 ```

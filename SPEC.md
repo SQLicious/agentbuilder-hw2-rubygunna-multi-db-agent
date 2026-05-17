@@ -223,9 +223,12 @@ CREATE TABLE handbook_chunks (
 ## 7. Frontend
 
 - Vite + React + TypeScript
-- Split panel layout: chat on left, tool trace on right
-- Tool trace shows: tool name, args, result (collapsed by default, expandable)
+- Three-panel layout: collapsible sidebar (left) · chat area (centre) · live tool trace (right)
+- Tool trace shows: tool name, args, SQL query, result (collapsible sections)
+- Light / dark mode toggle — persists to `localStorage`
 - No auth, no streaming, no multi-turn memory
+
+> **UI disclaimer — placeholder nav items:** The landing page navigation bar contains five links: **Features**, **Use Cases**, **Data Sources**, **Security**, and **Docs**. The first three scroll to the corresponding sections on the landing page. **Security** and **Docs** are intentional placeholders wired for future development — they currently anchor to the footer. No security page or documentation site has been built. These items are included to reflect the intended product surface and will be developed in a future iteration.
 
 ---
 

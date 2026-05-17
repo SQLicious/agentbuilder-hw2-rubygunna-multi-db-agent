@@ -8,90 +8,468 @@ interface Message {
   content: string;
   toolCalls?: ToolCall[];
   elapsedMs?: number;
+  timestamp?: string;
 }
 
-const SAMPLE_QUESTIONS = [
-  "How many products do we have in stock?",
-  "Show me the 5 cheapest laptops",
-  "What are customers saying about the Samsung TV?",
-  "Show open support tickets",
-  "What is the return policy for electronics?",
+const QUICK_QUERIES = [
+  "Open support tickets today",
+  "Top products by revenue",
+  "Low stock alerts",
+  "Return policy for laptops",
 ];
 
-const SOURCES = [
-  { icon: "🗄️", label: "Products & Orders", db: "Postgres" },
-  { icon: "💬", label: "Reviews & Tickets", db: "Mongo" },
-  { icon: "📖", label: "Policy Handbook", db: "pgvector" },
+const NAV_ITEMS = [
+  { icon: "💬", label: "Ask" },
+  { icon: "⏱️", label: "History" },
+  { icon: "🔖", label: "Saved Queries" },
+  { icon: "🗄️", label: "Sources" },
+  { icon: "⚙️", label: "Settings" },
 ];
 
-function ToolCallCard({ tc }: { tc: ToolCall }) {
-  const [open, setOpen] = useState(false);
-  const colors: Record<string, string> = {
-    sql_query: "bg-blue-50 border-blue-200 text-blue-800",
-    mongo_query: "bg-green-50 border-green-200 text-green-800",
-    handbook_search: "bg-amber-50 border-amber-200 text-amber-800",
-  };
-  const cls = colors[tc.tool] ?? "bg-gray-50 border-gray-200 text-gray-800";
+const CONNECTED_SOURCES = [
+  { icon: "⚡", iconBgVar: "var(--ds-postgres-bg)", name: "Supabase Postgres", sub: "Inventory & Orders" },
+  { icon: "🍃", iconBgVar: "var(--ds-mongo-bg)", name: "MongoDB Atlas", sub: "Reviews & Tickets" },
+  { icon: "🔷", iconBgVar: "var(--ds-vector-bg)", name: "pgvector (Supabase)", sub: "Policies & Procedures" },
+];
+
+function nowStr(): string {
+  return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function extractSqlQuery(toolCalls: ToolCall[]): string | null {
+  const tc = toolCalls.find((t) => t.tool === "sql_query");
+  if (!tc) return null;
+  if (typeof tc.args === "object" && tc.args !== null)
+    return (tc.args as Record<string, string>).query ?? null;
+  return null;
+}
+
+function ToolTracePanel({ messages, loading }: { messages: Message[]; loading: boolean }) {
+  const lastAsst = [...messages].reverse().find((m) => m.role === "assistant");
+  const toolCalls = lastAsst?.toolCalls ?? [];
+  const elapsedMs = lastAsst?.elapsedMs;
+  const sqlQuery = toolCalls.length > 0 ? extractSqlQuery(toolCalls) : null;
+  const [sqlOpen, setSqlOpen] = useState(true);
+
+  const hasSql = toolCalls.some((t) => t.tool === "sql_query");
+  const hasMongo = toolCalls.some((t) => t.tool === "mongo_query");
+  const hasHandbook = toolCalls.some((t) => t.tool === "handbook_search");
+
+  const steps = toolCalls.map((tc) => ({
+    name:
+      tc.tool === "sql_query" ? "SQL Query" :
+      tc.tool === "mongo_query" ? "Mongo Query" : "Handbook Search",
+    sub:
+      tc.tool === "sql_query" ? "Postgres (Supabase)" :
+      tc.tool === "mongo_query" ? "MongoDB Atlas" : "pgvector (Supabase)",
+  }));
+
   return (
-    <div className={`border rounded-lg p-3 text-xs mt-2 ${cls}`}>
-      <button
-        className="w-full flex items-center justify-between font-semibold"
-        onClick={() => setOpen((o) => !o)}
+    <aside
+      style={{
+        width: "300px",
+        flexShrink: 0,
+        background: "var(--bg-sub)",
+        borderLeft: "1px solid var(--border)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          padding: "14px 16px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexShrink: 0,
+        }}
       >
-        <span>⚙ {tc.tool}</span>
-        <span className="opacity-60">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div className="mt-2 space-y-1">
-          <div>
-            <span className="opacity-60">Args: </span>
-            <code className="break-all">{JSON.stringify(tc.args)}</code>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)" }}>Tool Trace</span>
+        <button
+          style={{
+            fontSize: "11px",
+            color: "var(--text-2)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Hide ▲
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {["Planner", "SQL Query", "Postgres (Supabase)", "Grounded Answer"].map((s) => (
+              <div
+                key={s}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "8px 10px",
+                  background: "var(--bg-item)",
+                  borderRadius: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    borderRadius: "50%",
+                    border: "2px solid var(--accent)",
+                    borderTopColor: "transparent",
+                    animation: "spin 0.8s linear infinite",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ fontSize: "12px", color: "var(--text-2)" }}>{s}</span>
+              </div>
+            ))}
           </div>
-          <div>
-            <span className="opacity-60">Result: </span>
-            <pre className="mt-1 bg-white/60 p-2 rounded overflow-x-auto whitespace-pre-wrap break-all">
-              {typeof tc.result === "string"
-                ? tc.result
-                : JSON.stringify(tc.result, null, 2)}
-            </pre>
+        ) : steps.length > 0 ? (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+              {steps.map((step, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "9px 10px",
+                    background: "var(--bg-item)",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      borderRadius: "50%",
+                      background: "var(--green)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "10px",
+                      color: "#fff",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ✓
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--text-1)" }}>{step.name}</div>
+                    <div style={{ fontSize: "10px", color: "var(--text-2)" }}>{step.sub}</div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      background: "var(--green-bg)",
+                      color: "var(--green)",
+                      borderRadius: "4px",
+                      padding: "1px 5px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    Executed
+                  </span>
+                </div>
+              ))}
+              {lastAsst && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "9px 10px",
+                    background: "var(--accent-bg)",
+                    borderRadius: "8px",
+                    border: "1px solid var(--accent-border)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      borderRadius: "50%",
+                      background: "var(--accent)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "10px",
+                      color: "#000",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ✓
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--text-1)" }}>
+                      Grounded Answer
+                    </div>
+                    <div style={{ fontSize: "10px", color: "var(--text-2)" }}>
+                      Synthesize and ground the answer
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      background: "var(--accent-bg)",
+                      color: "var(--accent)",
+                      borderRadius: "4px",
+                      padding: "1px 5px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    Grounded
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {elapsedMs !== undefined && (
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-2)",
+                  textAlign: "center",
+                  marginBottom: "14px",
+                }}
+              >
+                ⏱ Completed in {elapsedMs} ms
+              </div>
+            )}
+
+            {/* SQL Query */}
+            {hasSql && (
+              <div
+                style={{
+                  marginBottom: "6px",
+                  background: "var(--bg-item)",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border)",
+                  overflow: "hidden",
+                }}
+              >
+                <button
+                  onClick={() => setSqlOpen((o) => !o)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "9px 12px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--text-1)",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                  }}
+                >
+                  SQL Query
+                  <span style={{ fontSize: "10px", color: "var(--text-2)" }}>{sqlOpen ? "▲" : "▼"}</span>
+                </button>
+                {sqlOpen && sqlQuery && (
+                  <div style={{ padding: "0 12px 10px" }}>
+                    <pre
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--code-text)",
+                        background: "var(--code-bg)",
+                        borderRadius: "6px",
+                        padding: "10px",
+                        margin: 0,
+                        overflowX: "auto",
+                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {sqlQuery}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mongo / Handbook / Warnings / Elapsed */}
+            {[
+              {
+                label: "Mongo Query",
+                note: hasMongo ? null : "No data used",
+                active: hasMongo,
+              },
+              {
+                label: "Handbook Search",
+                note: hasHandbook ? null : "No handbook entries used",
+                active: hasHandbook,
+              },
+              { label: "Warnings", note: "0 warnings", active: false },
+              {
+                label: "Elapsed Time",
+                note: elapsedMs !== undefined ? `${elapsedMs} ms` : null,
+                active: false,
+              },
+            ].map((row) =>
+              row.note !== null ? (
+                <div
+                  key={row.label}
+                  style={{
+                    marginBottom: "6px",
+                    background: "var(--bg-item)",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "9px 12px",
+                      color: "var(--text-1)",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {row.label}
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: row.active ? "var(--green)" : "var(--text-2)",
+                      }}
+                    >
+                      {row.note}
+                    </span>
+                  </div>
+                </div>
+              ) : null
+            )}
+          </>
+        ) : (
+          <div
+            style={{
+              color: "var(--text-2)",
+              fontSize: "12px",
+              textAlign: "center",
+              paddingTop: "24px",
+            }}
+          >
+            Ask a question to see the tool trace
           </div>
+        )}
+
+        {/* Connected Sources */}
+        <div style={{ marginTop: "16px" }}>
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 600,
+              color: "var(--text-2)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              marginBottom: "10px",
+            }}
+          >
+            Connected Sources
+          </div>
+          {CONNECTED_SOURCES.map((src) => (
+            <div
+              key={src.name}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "8px 6px",
+                borderRadius: "8px",
+                marginBottom: "4px",
+              }}
+            >
+              <div
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "8px",
+                  background: src.iconBgVar,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "15px",
+                  flexShrink: 0,
+                }}
+              >
+                {src.icon}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "11px", fontWeight: 500, color: "var(--text-1)" }}>{src.name}</div>
+                <div style={{ fontSize: "10px", color: "var(--text-2)" }}>{src.sub}</div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: "10px",
+                  color: "var(--green)",
+                  flexShrink: 0,
+                }}
+              >
+                <span
+                  style={{
+                    width: "5px",
+                    height: "5px",
+                    borderRadius: "50%",
+                    background: "var(--green)",
+                    display: "inline-block",
+                  }}
+                />
+                Connected
+              </div>
+            </div>
+          ))}
         </div>
-      )}
-    </div>
+      </div>
+    </aside>
   );
 }
 
 export default function App() {
   const [showChat, setShowChat] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    const saved = localStorage.getItem("voltiq-theme");
+    return (saved === "light" ? "light" : "dark") as "dark" | "light";
+  });
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeDbs, setActiveDbs] = useState<Set<string>>(new Set());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeNav, setActiveNav] = useState("Ask");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("voltiq-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+
   const submit = async (text?: string) => {
     const question = (text ?? input).trim();
     if (!question || loading) return;
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: question }]);
+    const ts = nowStr();
+    setMessages((prev) => [...prev, { role: "user", content: question, timestamp: ts }]);
     setLoading(true);
-
     try {
       const res: ChatResponse = await sendMessage(question);
-      const usedDbs = new Set(
-        res.tool_calls.map((tc) =>
-          tc.tool === "sql_query"
-            ? "POSTGRES"
-            : tc.tool === "mongo_query"
-            ? "MONGO"
-            : "RAG"
-        )
-      );
-      setActiveDbs(usedDbs);
       setMessages((prev) => [
         ...prev,
         {
@@ -99,181 +477,587 @@ export default function App() {
           content: res.answer,
           toolCalls: res.tool_calls,
           elapsedMs: res.elapsed_ms,
+          timestamp: nowStr(),
         },
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Error: could not reach the agent." },
+        { role: "assistant", content: "Error: could not reach the agent.", timestamp: nowStr() },
       ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const today = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  if (!showChat) return <Landing onEnter={() => setShowChat(true)} />;
+  if (!showChat)
+    return <Landing onEnter={() => setShowChat(true)} theme={theme} onToggleTheme={toggleTheme} />;
 
   return (
-    <div className="flex h-screen font-sans text-sm overflow-hidden">
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        background: "var(--bg-main)",
+        color: "var(--text-1)",
+        fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+        overflow: "hidden",
+        transition: "background 0.2s, color 0.2s",
+      }}
+    >
       {/* ── Sidebar ── */}
-      <aside className="w-72 shrink-0 bg-[#1c1c1c] text-white flex flex-col">
-        {/* Logo */}
-        <div className="px-5 pt-6 pb-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#C8603A] flex items-center justify-center text-xl">
-            🛍️
-          </div>
-          <div>
-            <div className="font-bold tracking-wide">ElectroAgent</div>
-            <div className="text-xs text-white/50 uppercase tracking-widest">
-              Internal AI Agent
+      <aside
+        style={{
+          width: sidebarCollapsed ? "60px" : "260px",
+          flexShrink: 0,
+          background: "var(--bg-sub)",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          transition: "width 0.2s ease",
+          overflow: "hidden",
+        }}
+      >
+        {/* Logo + collapse */}
+        <div
+          style={{
+            padding: "14px 12px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexShrink: 0,
+            minHeight: "60px",
+          }}
+        >
+          {!sidebarCollapsed && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+              <div
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  background: "var(--accent)",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "17px",
+                  flexShrink: 0,
+                }}
+              >
+                ⚡
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    color: "var(--text-1)",
+                    whiteSpace: "nowrap",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  VoltIQ Concierge
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-2)", whiteSpace: "nowrap" }}>
+                  Internal AI Agent
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        <div className="px-4 pb-4">
+          )}
+          {sidebarCollapsed && (
+            <div
+              style={{
+                width: "34px",
+                height: "34px",
+                background: "var(--accent)",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "17px",
+              }}
+            >
+              ⚡
+            </div>
+          )}
           <button
-            onClick={() => {
-              setMessages([]);
-              setActiveDbs(new Set());
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            style={{
+              background: "var(--bg-item)",
+              border: "1px solid var(--border)",
+              borderRadius: "6px",
+              width: "26px",
+              height: "26px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--text-2)",
+              fontSize: "11px",
+              flexShrink: 0,
+              marginLeft: sidebarCollapsed ? "auto" : "8px",
             }}
-            className="w-full flex items-center gap-2 bg-white/10 hover:bg-white/20 transition rounded-lg px-4 py-2 text-sm font-medium"
           >
-            <span className="text-lg">+</span> New conversation
+            {sidebarCollapsed ? ">>" : "<<"}
           </button>
         </div>
 
-        <div className="px-4 flex-1 overflow-y-auto">
-          {/* Sample questions */}
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-3">
-            Try asking
-          </p>
-          <ul className="space-y-1">
-            {SAMPLE_QUESTIONS.map((q) => (
-              <li key={q}>
-                <button
-                  onClick={() => submit(q)}
-                  className="w-full text-left text-white/70 hover:text-white hover:bg-white/10 rounded-lg px-3 py-2 text-xs leading-snug transition"
-                >
-                  · {q}
-                </button>
-              </li>
-            ))}
-          </ul>
+        {/* Nav */}
+        <div style={{ padding: "10px 8px", flex: 1 }}>
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => setActiveNav(item.label)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px",
+                borderRadius: "8px",
+                border: "none",
+                background:
+                  activeNav === item.label ? "var(--bg-nav-active)" : "transparent",
+                color:
+                  activeNav === item.label ? "var(--nav-active-text)" : "var(--text-2)",
+                fontSize: "13px",
+                cursor: "pointer",
+                textAlign: "left",
+                marginBottom: "2px",
+                transition: "background 0.15s",
+              }}
+            >
+              <span style={{ fontSize: "15px", flexShrink: 0 }}>{item.icon}</span>
+              {!sidebarCollapsed && <span>{item.label}</span>}
+            </button>
+          ))}
+        </div>
 
-          {/* Sources */}
-          <p className="text-[10px] uppercase tracking-widest text-white/40 mt-6 mb-3">
-            Sources
-          </p>
-          <ul className="space-y-1">
-            {SOURCES.map((s) => (
-              <li
-                key={s.db}
-                className="flex items-center justify-between px-3 py-2 rounded-lg text-white/60 text-xs"
+        {/* User + status */}
+        {!sidebarCollapsed && (
+          <div
+            style={{
+              padding: "10px 12px",
+              borderTop: "1px solid var(--border)",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "6px",
+                borderRadius: "8px",
+                marginBottom: "10px",
+              }}
+            >
+              <div
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "50%",
+                  background: "var(--user-bubble)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#fff",
+                  flexShrink: 0,
+                }}
               >
-                <span className="flex items-center gap-2">
-                  <span>{s.icon}</span>
-                  <span>{s.label}</span>
+                RG
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-1)" }}>Ruby G.</div>
+                <div style={{ fontSize: "11px", color: "var(--text-2)" }}>Store Operations</div>
+              </div>
+              <span style={{ color: "var(--text-2)", fontSize: "12px" }}>▾</span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "var(--green-bg)",
+                border: "1px solid var(--green-border)",
+                borderRadius: "8px",
+                padding: "8px 10px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "var(--green)",
+                    display: "inline-block",
+                  }}
+                />
+                <span style={{ fontSize: "11px", color: "var(--green)", fontWeight: 500 }}>
+                  All systems operational
                 </span>
-                <span className="text-white/30 text-[10px]">{s.db}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Footer */}
-        <div className="px-5 py-4 text-[10px] text-white/30 border-t border-white/10">
-          {today} · GPT-4o-mini
-        </div>
+              </div>
+              <span style={{ fontSize: "10px", color: "var(--text-2)" }}>›</span>
+            </div>
+            <div
+              style={{
+                fontSize: "10px",
+                color: "var(--text-2)",
+                textAlign: "center",
+                marginTop: "6px",
+              }}
+            >
+              3 data sources connected
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* ── Main ── */}
-      <div className="flex flex-col flex-1 bg-[#F5F0E8] overflow-hidden">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-black/10 bg-[#F5F0E8]/80 backdrop-blur">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowChat(false)}
-              className="text-xs text-[#1c1c1c]/40 hover:text-[#1c1c1c]/70 transition"
+        <header
+          style={{
+            padding: "0 20px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: "60px",
+            flexShrink: 0,
+            background: "var(--bg-main)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>Ask the store</span>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "var(--accent-bg)",
+                border: "1px solid var(--accent-border)",
+                borderRadius: "12px",
+                padding: "3px 10px",
+                fontSize: "11px",
+                color: "var(--accent)",
+              }}
             >
-              ← Back
-            </button>
-            <span className="font-semibold text-[#1c1c1c]">Conversation</span>
+              <span
+                style={{
+                  width: "5px",
+                  height: "5px",
+                  borderRadius: "50%",
+                  background: "var(--accent)",
+                  display: "inline-block",
+                }}
+              />
+              Internal Demo
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider">
-            {(["POSTGRES", "MONGO", "RAG"] as const).map((db) => (
-              <span key={db} className="flex items-center gap-1">
-                <span
-                  className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                    activeDbs.has(db) ? "bg-emerald-500" : "bg-gray-300"
-                  }`}
-                />
-                <span className="text-gray-500">{db}</span>
-              </span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {["🔍", "?", "🔔"].map((ic) => (
+              <button
+                key={ic}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  background: "var(--bg-item)",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                {ic}
+              </button>
             ))}
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "var(--bg-item)",
+                border: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "var(--bg-item)",
+                border: "1px solid var(--border)",
+                borderRadius: "20px",
+                padding: "4px 10px 4px 4px",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                style={{
+                  width: "26px",
+                  height: "26px",
+                  borderRadius: "50%",
+                  background: "var(--user-bubble)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "#fff",
+                }}
+              >
+                RG
+              </div>
+              <span style={{ fontSize: "11px", color: "var(--text-2)" }}>▾</span>
+            </div>
           </div>
         </header>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center select-none">
-              <div className="w-16 h-16 rounded-2xl bg-[#C8603A] flex items-center justify-center text-3xl mb-6">
-                🛍️
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+          {messages.length === 0 && !loading ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  background: "var(--accent)",
+                  borderRadius: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "26px",
+                  marginBottom: "20px",
+                }}
+              >
+                ⚡
               </div>
-              <h1 className="text-3xl font-serif font-semibold text-[#1c1c1c] mb-3 leading-snug">
-                What can ElectroAgent<br />pull together for you?
-              </h1>
-              <p className="text-gray-500 max-w-md mb-4">
-                Ask anything across products, orders, customer reviews, support
-                tickets, or store policy. The agent will pick the right tool and
-                show you the trace.
-              </p>
-              <p className="text-[11px] uppercase tracking-widest text-gray-400">
-                ✦ Pick a suggestion from the sidebar, or just type
+              <h2
+                style={{
+                  fontSize: "22px",
+                  fontWeight: 600,
+                  marginBottom: "10px",
+                  color: "var(--text-1)",
+                }}
+              >
+                What can I help you with?
+              </h2>
+              <p
+                style={{
+                  color: "var(--text-2)",
+                  fontSize: "14px",
+                  lineHeight: 1.6,
+                  maxWidth: "400px",
+                }}
+              >
+                Ask about inventory, orders, customer reviews, support tickets, or store
+                policy. VoltIQ Concierge picks the right tool and shows you the trace.
               </p>
             </div>
           ) : (
-            <div className="max-w-2xl mx-auto space-y-6">
+            <div
+              style={{
+                maxWidth: "760px",
+                margin: "0 auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+            >
               {messages.map((msg, i) => (
                 <div key={i}>
                   {msg.role === "user" ? (
-                    <div className="flex justify-end">
-                      <div className="bg-[#C8603A] text-white px-4 py-2.5 rounded-2xl rounded-tr-sm max-w-[75%] text-sm leading-relaxed">
-                        {msg.content}
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <div
+                        style={{
+                          background: "var(--user-bubble)",
+                          borderRadius: "16px 16px 2px 16px",
+                          padding: "12px 16px",
+                          maxWidth: "75%",
+                          color: "#fff",
+                        }}
+                      >
+                        <p style={{ fontSize: "14px", lineHeight: 1.5, margin: 0 }}>{msg.content}</p>
+                        {msg.timestamp && (
+                          <p
+                            style={{
+                              fontSize: "10px",
+                              color: "rgba(255,255,255,0.55)",
+                              margin: "5px 0 0",
+                              textAlign: "right",
+                            }}
+                          >
+                            {msg.timestamp} ✓
+                          </p>
+                        )}
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-2">
-                      <div className="bg-white border border-black/8 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[90%] text-sm leading-relaxed text-[#1c1c1c] shadow-sm">
-                        {msg.content}
-                        {msg.elapsedMs !== undefined && (
-                          <div className="text-[10px] text-gray-400 mt-1">
-                            {msg.elapsedMs}ms
-                          </div>
+                    <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "26px",
+                            height: "26px",
+                            background: "var(--accent)",
+                            borderRadius: "6px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "13px",
+                          }}
+                        >
+                          ⚡
+                        </div>
+                        <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)" }}>
+                          VoltIQ Concierge
+                        </span>
+                        {msg.timestamp && (
+                          <span style={{ fontSize: "11px", color: "var(--text-2)" }}>{msg.timestamp}</span>
                         )}
                       </div>
-                      {msg.toolCalls && msg.toolCalls.length > 0 && (
-                        <div className="max-w-[90%] space-y-1">
-                          {msg.toolCalls.map((tc, j) => (
-                            <ToolCallCard key={j} tc={tc} />
-                          ))}
+                      <div
+                        style={{
+                          background: "var(--agent-card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "2px 16px 16px 16px",
+                          padding: "16px 18px",
+                          maxWidth: "90%",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            lineHeight: 1.6,
+                            margin: "0 0 12px",
+                            color: "var(--text-1)",
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {msg.content}
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            paddingTop: "10px",
+                            borderTop: "1px solid var(--border)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              fontSize: "11px",
+                              color: "var(--text-2)",
+                            }}
+                          >
+                            <span>🛡️</span>
+                            <span>Results grounded in inventory and product data.</span>
+                          </div>
+                          <button
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--accent)",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            View sources ▾
+                          </button>
                         </div>
-                      )}
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                        {["👍", "👎", "🏳️"].map((icon) => (
+                          <button
+                            key={icon}
+                            style={{
+                              background: "var(--bg-item)",
+                              border: "1px solid var(--border)",
+                              borderRadius: "8px",
+                              padding: "4px 8px",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               ))}
+
               {loading && (
-                <div className="flex gap-1.5 px-4 py-3">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0" }}>
+                  <div
+                    style={{
+                      width: "26px",
+                      height: "26px",
+                      background: "var(--accent)",
+                      borderRadius: "6px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "13px",
+                    }}
+                  >
+                    ⚡
+                  </div>
+                  <div style={{ display: "flex", gap: "5px" }}>
+                    {[0, 150, 300].map((d) => (
+                      <span
+                        key={d}
+                        style={{
+                          width: "7px",
+                          height: "7px",
+                          borderRadius: "50%",
+                          background: "var(--text-2)",
+                          animation: `bounce 1s ${d}ms infinite`,
+                          display: "inline-block",
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
               <div ref={bottomRef} />
@@ -282,12 +1066,42 @@ export default function App() {
         </div>
 
         {/* Input */}
-        <div className="px-6 pb-5 pt-3">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white border border-black/10 rounded-2xl shadow-sm flex flex-col">
+        <div
+          style={{
+            padding: "14px 24px 18px",
+            borderTop: "1px solid var(--border)",
+            flexShrink: 0,
+            background: "var(--bg-main)",
+          }}
+        >
+          <div style={{ maxWidth: "760px", margin: "0 auto" }}>
+            <div
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-strong)",
+                borderRadius: "12px",
+                padding: "12px 14px",
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "10px",
+                marginBottom: "10px",
+              }}
+            >
+              <button
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  color: "var(--text-2)",
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+              >
+                📎
+              </button>
               <textarea
-                className="flex-1 px-4 pt-4 pb-2 text-sm resize-none focus:outline-none bg-transparent rounded-2xl leading-relaxed"
-                placeholder="Ask ElectroAgent about products, orders, reviews, or policy..."
+                placeholder="Ask about orders, inventory, reviews, tickets, or policy..."
                 rows={2}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -298,27 +1112,95 @@ export default function App() {
                   }
                 }}
                 disabled={loading}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-1)",
+                  fontSize: "14px",
+                  resize: "none",
+                  outline: "none",
+                  lineHeight: 1.5,
+                  fontFamily: "inherit",
+                }}
               />
-              <div className="flex items-center justify-between px-4 pb-3">
-                <div className="text-[10px] text-gray-400 flex gap-3">
-                  <span><kbd className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">Enter</kbd> to send</span>
-                  <span><kbd className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">Shift ↵</kbd> for newline</span>
-                </div>
-                <button
-                  onClick={() => submit()}
-                  disabled={loading || !input.trim()}
-                  className="w-8 h-8 rounded-full bg-[#C8603A] text-white flex items-center justify-center disabled:opacity-30 hover:bg-[#b05530] transition"
+              <button
+                onClick={() => submit()}
+                disabled={loading || !input.trim()}
+                style={{
+                  background:
+                    input.trim() && !loading ? "var(--accent)" : "var(--bg-item)",
+                  color:
+                    input.trim() && !loading ? "var(--accent-text)" : "var(--text-2)",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "8px 14px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: input.trim() && !loading ? "pointer" : "not-allowed",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  flexShrink: 0,
+                  transition: "all 0.15s",
+                }}
+              >
+                ✈ Send
+                <span
+                  style={{
+                    background: "rgba(0,0,0,0.15)",
+                    borderRadius: "4px",
+                    padding: "1px 5px",
+                    fontSize: "10px",
+                  }}
                 >
-                  ↑
-                </button>
-              </div>
+                  ⌘ Enter
+                </span>
+              </button>
             </div>
-            <p className="text-center text-[10px] text-gray-400 mt-2 uppercase tracking-widest">
-              ElectroAgent may write SQL or query Mongo · Always verifiable in the trace
-            </p>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              {QUICK_QUERIES.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => submit(q)}
+                  disabled={loading}
+                  style={{
+                    background: "var(--bg-item)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "20px",
+                    padding: "5px 12px",
+                    fontSize: "11px",
+                    color: "var(--text-2)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
+                >
+                  ⚡ {q}
+                </button>
+              ))}
+              <button
+                style={{
+                  background: "var(--bg-item)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "20px",
+                  padding: "5px 12px",
+                  fontSize: "11px",
+                  color: "var(--text-2)",
+                  cursor: "pointer",
+                }}
+              >
+                ⊞ View all
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* ── Tool Trace ── */}
+      <ToolTracePanel messages={messages} loading={loading} />
     </div>
   );
 }

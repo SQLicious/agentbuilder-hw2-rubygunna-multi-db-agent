@@ -1,3 +1,83 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Theme variables ── */
+:root,
+[data-theme="dark"] {
+  --bg-main:          #080F1E;
+  --bg-sub:           #0A1222;
+  --bg-card:          #0D1729;
+  --bg-item:          rgba(255,255,255,0.04);
+  --bg-item-hover:    rgba(255,255,255,0.07);
+  --bg-nav-active:    #1E3A5F;
+  --nav-active-text:  #FFFFFF;
+  --text-1:           #FFFFFF;
+  --text-2:           #8B9CB6;
+  --text-3:           #4B5E7A;
+  --border:           rgba(255,255,255,0.07);
+  --border-strong:    rgba(255,255,255,0.12);
+  --accent:           #F5C83A;
+  --accent-bg:        rgba(245,200,58,0.10);
+  --accent-border:    rgba(245,200,58,0.22);
+  --accent-text:      #000000;
+  --user-bubble:      #2563EB;
+  --agent-card:       #0D1729;
+  --green:            #22C55E;
+  --green-bg:         rgba(34,197,94,0.08);
+  --green-border:     rgba(34,197,94,0.18);
+  --code-text:        #93C5FD;
+  --code-bg:          rgba(0,0,0,0.30);
+  --shadow:           0 32px 80px rgba(0,0,0,0.60);
+  --ds-postgres-bg:   #1A3050;
+  --ds-mongo-bg:      #0F2A1A;
+  --ds-vector-bg:     #1A1E40;
+  --mockup-bg:        #0D1729;
+  --mockup-header:    #0A1222;
+}
+
+[data-theme="light"] {
+  --bg-main:          #F0F4F8;
+  --bg-sub:           #E2E8F0;
+  --bg-card:          #FFFFFF;
+  --bg-item:          rgba(0,0,0,0.04);
+  --bg-item-hover:    rgba(0,0,0,0.07);
+  --bg-nav-active:    #DBEAFE;
+  --nav-active-text:  #1D4ED8;
+  --text-1:           #0F172A;
+  --text-2:           #475569;
+  --text-3:           #94A3B8;
+  --border:           rgba(0,0,0,0.09);
+  --border-strong:    rgba(0,0,0,0.15);
+  --accent:           #D97706;
+  --accent-bg:        rgba(217,119,6,0.08);
+  --accent-border:    rgba(217,119,6,0.20);
+  --accent-text:      #FFFFFF;
+  --user-bubble:      #2563EB;
+  --agent-card:       #FFFFFF;
+  --green:            #16A34A;
+  --green-bg:         rgba(22,163,74,0.08);
+  --green-border:     rgba(22,163,74,0.18);
+  --code-text:        #1D4ED8;
+  --code-bg:          rgba(0,0,0,0.04);
+  --shadow:           0 32px 80px rgba(0,0,0,0.15);
+  --ds-postgres-bg:   #DBEAFE;
+  --ds-mongo-bg:      #DCFCE7;
+  --ds-vector-bg:     #EDE9FE;
+  --mockup-bg:        #0D1729;
+  --mockup-header:    #0A1222;
+}
+
+/* Always-dark app mockup inside landing hero */
+.mockup-dark { background: #0D1729; color: #fff; }
+.mockup-dark-sub { background: #0A1222; }
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+* { box-sizing: border-box; }
+textarea::placeholder { color: var(--text-3); }
