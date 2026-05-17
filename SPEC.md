@@ -22,14 +22,20 @@ Browser
   └─► React/Vite/TS UI  (chat panel + tool trace panel, split layout)
         └─► POST /chat  →  FastAPI
                               └─► LangChain v1 ReAct Agent (gpt-4o-mini)
-                                    ├─► sql_query ──────► Supabase Postgres
-                                    ├─► mongo_query ────► MongoDB Atlas
-                                    └─► handbook_search ► pgvector (Supabase)
+                                    ├─► sql_query ──────────────────────► Supabase (Postgres)
+                                    │                                      tables: products, orders, customers
+                                    ├─► mongo_query ────────────────────► MongoDB Atlas
+                                    │                                      db: ecommerce
+                                    └─► handbook_search ────────────────► Supabase (pgvector extension)
+                                                                           table: handbook_chunks
+                                                                           same DB, same connection as sql_query
 
 Response shape: { answer, tool_calls, warnings, elapsed_ms }
 ```
 
 The agent never connects to any data store directly. Every read goes through one of the three typed tools.
+
+**Important:** `sql_query` and `handbook_search` both connect to the **same Supabase Postgres instance** via the same `DATABASE_URL`. pgvector is a Postgres extension (`CREATE EXTENSION IF NOT EXISTS vector`) enabled within Supabase — it is not a separate vector database. This means our two "Postgres" tools share one connection pool and one Supabase project. The only truly separate data store is MongoDB Atlas.
 
 **Schema strategy:** Pattern A (static system-prompt context). The full SQL and MongoDB schema is injected into the system prompt at startup. Schema is small enough (~500 tokens) that in-context grounding is cheaper and more deterministic than a describe_schema tool round-trip. Pattern B would be preferable at larger schema sizes.
 

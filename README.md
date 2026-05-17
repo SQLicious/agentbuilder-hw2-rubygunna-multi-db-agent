@@ -2,7 +2,7 @@
 
 **Ruby Gunna · Agent Builder 2026 · HW2 Submission**
 
-A full-stack AI agent that answers questions about an electronics store by routing across three data sources: a SQL database (Supabase Postgres), a NoSQL database (MongoDB Atlas), and a vector handbook (pgvector RAG). Built with FastAPI, LangChain v1, and a React split-panel chat UI.
+A full-stack AI agent that answers questions about an electronics store by routing across three data sources: **Supabase Postgres** (structured SQL + pgvector for RAG — both in the same Supabase instance), **MongoDB Atlas** (unstructured reviews and support tickets), and a **policy handbook** embedded with `text-embedding-3-small` and stored in pgvector. Built with FastAPI, LangChain v1, and a React chat UI.
 
 ---
 
@@ -75,13 +75,16 @@ Browser
                                     │
                                     ├─► mongo_query(collection, filter, limit)
                                     │     └─► MongoDB Atlas (pymongo)
+                                    │         db: ecommerce
                                     │         collections: reviews, support_tickets,
                                     │                      activity_logs
                                     │
                                     └─► handbook_search(query, k)
-                                          └─► pgvector on Supabase
-                                              table: handbook_chunks (1536-dim)
+                                          └─► Supabase Postgres — pgvector extension
+                                              table: handbook_chunks (vector 1536-dim)
                                               model: text-embedding-3-small
+                                              ★ same Supabase instance as sql_query
+                                                same DATABASE_URL, same psycopg2 conn
 
 Response: { answer, tool_calls, warnings, elapsed_ms }
 ```
