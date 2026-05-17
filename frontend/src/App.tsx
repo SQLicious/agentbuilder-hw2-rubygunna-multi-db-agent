@@ -43,6 +43,21 @@ function parseMarkdownTable(lines: string[]): { headers: string[]; rows: string[
   return { headers, rows };
 }
 
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**"))
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        if (part.startsWith("*") && part.endsWith("*"))
+          return <em key={i}>{part.slice(1, -1)}</em>;
+        return part;
+      })}
+    </>
+  );
+}
+
 function renderAnswer(text: string): React.ReactNode[] {
   const lines = text.split("\n");
   const blocks: Array<{ type: "text" | "table"; lines: string[] }> = [];
@@ -68,17 +83,7 @@ function renderAnswer(text: string): React.ReactNode[] {
             <thead>
               <tr style={{ background: "var(--bg-item)" }}>
                 {headers.map((h, j) => (
-                  <th
-                    key={j}
-                    style={{
-                      padding: "9px 14px",
-                      borderBottom: "2px solid var(--accent)",
-                      color: "var(--accent)",
-                      fontWeight: 600,
-                      textAlign: "left",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <th key={j} style={{ padding: "9px 14px", borderBottom: "2px solid var(--accent)", color: "var(--accent)", fontWeight: 600, textAlign: "left", whiteSpace: "nowrap" }}>
                     {h}
                   </th>
                 ))}
@@ -86,14 +91,9 @@ function renderAnswer(text: string): React.ReactNode[] {
             </thead>
             <tbody>
               {rows.map((row, j) => (
-                <tr
-                  key={j}
-                  style={{ borderBottom: "1px solid var(--border)", background: j % 2 === 1 ? "var(--bg-item)" : "transparent" }}
-                >
+                <tr key={j} style={{ borderBottom: "1px solid var(--border)", background: j % 2 === 1 ? "var(--bg-item)" : "transparent" }}>
                   {row.map((cell, k) => (
-                    <td key={k} style={{ padding: "8px 14px", color: "var(--text-1)", whiteSpace: "nowrap", fontSize: "13px" }}>
-                      {cell}
-                    </td>
+                    <td key={k} style={{ padding: "8px 14px", color: "var(--text-1)", whiteSpace: "nowrap", fontSize: "13px" }}>{cell}</td>
                   ))}
                 </tr>
               ))}
@@ -102,12 +102,20 @@ function renderAnswer(text: string): React.ReactNode[] {
         </div>
       );
     }
-    const txt = block.lines.join("\n").trim();
-    if (!txt) return null;
+    const txtLines = block.lines.map((l) => l.trim()).filter(Boolean);
+    if (txtLines.length === 0) return null;
     return (
-      <p key={i} style={{ margin: "0 0 8px", lineHeight: 1.65, color: "var(--text-1)", fontSize: "14px" }}>
-        {txt}
-      </p>
+      <div key={i}>
+        {txtLines.map((line, j) => {
+          if (line.startsWith("### "))
+            return <h3 key={j} style={{ fontSize: "15px", fontWeight: 700, margin: "10px 0 6px", color: "var(--text-1)" }}>{renderInline(line.slice(4))}</h3>;
+          if (line.startsWith("## "))
+            return <h2 key={j} style={{ fontSize: "17px", fontWeight: 700, margin: "12px 0 6px", color: "var(--text-1)" }}>{renderInline(line.slice(3))}</h2>;
+          if (line.startsWith("# "))
+            return <h1 key={j} style={{ fontSize: "19px", fontWeight: 700, margin: "14px 0 8px", color: "var(--text-1)" }}>{renderInline(line.slice(2))}</h1>;
+          return <p key={j} style={{ margin: "0 0 6px", lineHeight: 1.65, color: "var(--text-1)", fontSize: "14px" }}>{renderInline(line)}</p>;
+        })}
+      </div>
     );
   });
 }
@@ -120,7 +128,35 @@ function extractSqlQuery(toolCalls: ToolCall[]): string | null {
   return null;
 }
 
-function ToolTracePanel({ messages, loading }: { messages: Message[]; loading: boolean }) {
+function ToolTracePanel({
+  messages,
+  loading,
+  width,
+  onWidthChange,
+}: {
+  messages: Message[];
+  loading: boolean;
+  width: number;
+  onWidthChange: (w: number) => void;
+}) {
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  const onDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startW: width };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const delta = dragRef.current.startX - ev.clientX;
+      onWidthChange(Math.max(240, Math.min(680, dragRef.current.startW + delta)));
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
   const lastAsst = [...messages].reverse().find((m) => m.role === "assistant");
   const toolCalls = lastAsst?.toolCalls ?? [];
   const elapsedMs = lastAsst?.elapsedMs;
@@ -143,15 +179,35 @@ function ToolTracePanel({ messages, loading }: { messages: Message[]; loading: b
   return (
     <aside
       style={{
-        width: "300px",
+        width: `${width}px`,
+        minWidth: "240px",
+        maxWidth: "680px",
         flexShrink: 0,
         background: "var(--bg-sub)",
         borderLeft: "1px solid var(--border)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        position: "relative",
       }}
     >
+      {/* Drag handle */}
+      <div
+        onMouseDown={onDragStart}
+        title="Drag to resize"
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: "5px",
+          cursor: "col-resize",
+          zIndex: 10,
+          background: "transparent",
+        }}
+        onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = "var(--accent)")}
+        onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = "transparent")}
+      />
       <div
         style={{
           padding: "14px 16px",
@@ -524,7 +580,16 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeNav, setActiveNav] = useState("Ask");
+  const [traceWidth, setTraceWidth] = useState(300);
+  const [openSources, setOpenSources] = useState<Set<number>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const toggleSources = (idx: number) =>
+    setOpenSources((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -1062,17 +1127,48 @@ export default function App() {
                             <span>Results grounded in inventory and product data.</span>
                           </div>
                           <button
-                            style={{
-                              fontSize: "11px",
-                              color: "var(--accent)",
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                            }}
+                            onClick={() => toggleSources(i)}
+                            style={{ fontSize: "11px", color: "var(--accent)", background: "none", border: "none", cursor: "pointer" }}
                           >
-                            View sources ▾
+                            View sources {openSources.has(i) ? "▴" : "▾"}
                           </button>
                         </div>
+
+                        {/* Sources panel */}
+                        {openSources.has(i) && msg.toolCalls && msg.toolCalls.length > 0 && (
+                          <div style={{ marginTop: "10px", borderTop: "1px solid var(--border)", paddingTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                            <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-2)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                              Sources used · {msg.toolCalls.length} tool call{msg.toolCalls.length !== 1 ? "s" : ""}
+                            </div>
+                            {msg.toolCalls.map((tc, ti) => {
+                              const isSQL = tc.tool === "sql_query";
+                              const isMongo = tc.tool === "mongo_query";
+                              const srcName = isSQL ? "Supabase Postgres" : isMongo ? "MongoDB Atlas" : "pgvector (Supabase)";
+                              const srcIcon = isSQL ? "⚡" : isMongo ? "🍃" : "🔷";
+                              const srcSub = isSQL ? "Inventory & Orders" : isMongo ? "Reviews & Tickets" : "Policies & Procedures";
+                              const srcColor = isSQL ? "var(--ds-postgres-bg)" : isMongo ? "var(--ds-mongo-bg)" : "var(--ds-vector-bg)";
+                              const queryStr = isSQL
+                                ? (tc.args as Record<string, string>)?.query ?? ""
+                                : isMongo
+                                ? `collection: ${(tc.args as Record<string, unknown>)?.collection ?? ""}`
+                                : `query: "${(tc.args as Record<string, string>)?.query ?? ""}"`;
+                              return (
+                                <div key={ti} style={{ display: "flex", gap: "10px", padding: "8px 10px", background: "var(--bg-item)", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                                  <div style={{ width: "30px", height: "30px", borderRadius: "7px", background: srcColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>
+                                    {srcIcon}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>{srcName}</div>
+                                    <div style={{ fontSize: "10px", color: "var(--text-2)", marginBottom: "4px" }}>{srcSub}</div>
+                                    <code style={{ fontSize: "10px", color: "var(--code-text)", background: "var(--code-bg)", padding: "3px 6px", borderRadius: "4px", display: "block", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                                      {queryStr}
+                                    </code>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
                         {["👍", "👎", "🏳️"].map((icon) => (
@@ -1269,7 +1365,7 @@ export default function App() {
       </div>
 
       {/* ── Tool Trace ── */}
-      <ToolTracePanel messages={messages} loading={loading} />
+      <ToolTracePanel messages={messages} loading={loading} width={traceWidth} onWidthChange={setTraceWidth} />
     </div>
   );
 }
