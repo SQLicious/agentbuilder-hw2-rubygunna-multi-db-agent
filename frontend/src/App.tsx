@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { ChatResponse, ToolCall } from "./api";
 import { sendMessage } from "./api";
 import Landing from "./Landing";
@@ -34,6 +34,82 @@ const CONNECTED_SOURCES = [
 
 function nowStr(): string {
   return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function parseMarkdownTable(lines: string[]): { headers: string[]; rows: string[][] } {
+  const dataLines = lines.filter((l) => !/^\|[\s\-:|]+\|$/.test(l.trim()));
+  const headers = dataLines[0]?.split("|").map((c) => c.trim()).filter(Boolean) ?? [];
+  const rows = dataLines.slice(1).map((l) => l.split("|").map((c) => c.trim()).filter(Boolean));
+  return { headers, rows };
+}
+
+function renderAnswer(text: string): React.ReactNode[] {
+  const lines = text.split("\n");
+  const blocks: Array<{ type: "text" | "table"; lines: string[] }> = [];
+  let current: { type: "text" | "table"; lines: string[] } | null = null;
+
+  for (const line of lines) {
+    const isTable = line.trim().startsWith("|") && line.trim().endsWith("|");
+    const type: "text" | "table" = isTable ? "table" : "text";
+    if (!current || current.type !== type) {
+      if (current) blocks.push(current);
+      current = { type, lines: [] };
+    }
+    current.lines.push(line);
+  }
+  if (current) blocks.push(current);
+
+  return blocks.map((block, i) => {
+    if (block.type === "table") {
+      const { headers, rows } = parseMarkdownTable(block.lines);
+      return (
+        <div key={i} style={{ overflowX: "auto", margin: "10px 0", borderRadius: "8px", border: "1px solid var(--border)" }}>
+          <table style={{ borderCollapse: "collapse", minWidth: "100%", fontSize: "13px" }}>
+            <thead>
+              <tr style={{ background: "var(--bg-item)" }}>
+                {headers.map((h, j) => (
+                  <th
+                    key={j}
+                    style={{
+                      padding: "9px 14px",
+                      borderBottom: "2px solid var(--accent)",
+                      color: "var(--accent)",
+                      fontWeight: 600,
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, j) => (
+                <tr
+                  key={j}
+                  style={{ borderBottom: "1px solid var(--border)", background: j % 2 === 1 ? "var(--bg-item)" : "transparent" }}
+                >
+                  {row.map((cell, k) => (
+                    <td key={k} style={{ padding: "8px 14px", color: "var(--text-1)", whiteSpace: "nowrap", fontSize: "13px" }}>
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    const txt = block.lines.join("\n").trim();
+    if (!txt) return null;
+    return (
+      <p key={i} style={{ margin: "0 0 8px", lineHeight: 1.65, color: "var(--text-1)", fontSize: "14px" }}>
+        {txt}
+      </p>
+    );
+  });
 }
 
 function extractSqlQuery(toolCalls: ToolCall[]): string | null {
@@ -957,20 +1033,13 @@ export default function App() {
                           border: "1px solid var(--border)",
                           borderRadius: "2px 16px 16px 16px",
                           padding: "16px 18px",
-                          maxWidth: "90%",
+                          width: "100%",
+                          overflowX: "hidden",
                         }}
                       >
-                        <p
-                          style={{
-                            fontSize: "14px",
-                            lineHeight: 1.6,
-                            margin: "0 0 12px",
-                            color: "var(--text-1)",
-                            whiteSpace: "pre-wrap",
-                          }}
-                        >
-                          {msg.content}
-                        </p>
+                        <div style={{ marginBottom: "12px" }}>
+                          {renderAnswer(msg.content)}
+                        </div>
                         <div
                           style={{
                             display: "flex",
