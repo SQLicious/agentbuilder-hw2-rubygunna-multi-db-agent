@@ -15,7 +15,7 @@
 ```
 backend/
   __init__.py
-  config.py              ← pydantic-settings, loads ..env
+  config.py              ← pydantic-settings, loads .env
   main.py                ← FastAPI app + /chat endpoint
   agent.py               ← LangChain ReAct executor
   tools/
