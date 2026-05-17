@@ -37,18 +37,34 @@ Postgres schema (use EXACT column names):
   orders:    id, customer_id, product_id, qty, status, created_at
   customers: id, name, email, created_at
 
+  IMPORTANT — category values are Title Case: 'Laptop', 'TV', 'Smartphone',
+  'Tablet', 'Headphones'. Always use ILIKE for filtering:
+    WHERE category ILIKE 'laptop'
+
+  Product names are exact strings like 'Samsung 65" 4K TV', 'MacBook Pro 14'.
+  ALWAYS use ILIKE with wildcards when searching by product name:
+    WHERE name ILIKE '%samsung%tv%'   -- NOT WHERE name = 'Samsung TV'
+    WHERE name ILIKE '%macbook%'
+
 MongoDB collections and key fields:
-  reviews:         product_id, rating, body, author, created_at
+  reviews:         product_id (INT, matches products.id), rating, body, author, created_at
   support_tickets: customer_id, subject, status, priority, messages[]
   activity_logs:   customer_id, event_type, metadata, timestamp
+
+  IMPORTANT — MongoDB product_id is an INTEGER that matches the id column in the
+  SQL products table. To find reviews for a product by name (e.g. "Samsung TV"),
+  you MUST first run sql_query to get the product's id, then use that integer in
+  the MongoDB filter: {{"product_id": <integer id>}}.
+  NEVER filter reviews by product name string — product names are not stored in MongoDB.
 
 Rules:
 1. Pick the right tool. SQL for structured/aggregate questions; Mongo for reviews,
    tickets, or activity; handbook for any policy text.
 2. Policy questions (returns, warranty, shipping, care) MUST use handbook_search.
-3. Multi-part questions may need more than one tool — use all that are needed.
-4. If a tool returns an error, do NOT retry the same call. Fix the query or skip.
-5. Be concise. Give the user the answer, not your reasoning.
+3. For reviews by product name: sql_query first to get product id → mongo_query with that id.
+4. Multi-part questions may need more than one tool — use all that are needed.
+5. If a tool returns an error, do NOT retry the same call. Fix the query or skip.
+6. Be concise. Give the user the answer, not your reasoning.
 """
 
 
