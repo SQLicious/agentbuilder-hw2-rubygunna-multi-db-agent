@@ -1,0 +1,421 @@
+{
+  "_meta": {
+    "description": "SkyNova Airlines — MongoDB seed data. customer_id and booking_reference values cross-reference data/supabase_seed.sql. Datetimes are ISO-8601 strings; the loader script (load_mongodb.py) converts them to BSON Date.",
+    "as_of_date": "2026-05-08",
+    "collections": ["support_tickets", "flight_reviews", "user_activity_logs"]
+  },
+
+  "support_tickets": [
+    {
+      "ticket_id": "TCK-1001",
+      "customer_id": 5,
+      "booking_reference": "SKYL5O2BC",
+      "category": "Refund",
+      "priority": "High",
+      "status": "Open",
+      "subject": "Refund for cancelled flight SN301 (BOM-SIN)",
+      "tags": ["cancellation", "refund", "SN301"],
+      "created_at": "2026-04-26 09:14:00",
+      "updated_at": "2026-05-06 11:22:00",
+      "messages": [
+        {"from": "customer", "at": "2026-04-26 09:14:00", "text": "My flight SN301 on 25 April was cancelled at the airport with no rebooking offered. I want a full refund to my original card."},
+        {"from": "agent", "at": "2026-04-27 14:02:00", "text": "Apologies for the disruption, Liam. Initiating refund per cancellation policy. Please allow 7-10 business days."},
+        {"from": "customer", "at": "2026-05-06 11:22:00", "text": "It's been over a week. Still no refund visible. Please escalate."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1002",
+      "customer_id": 8,
+      "booking_reference": "SKYM8C5RV",
+      "category": "Refund",
+      "priority": "Medium",
+      "status": "Resolved",
+      "subject": "SN301 cancellation - rebooked on SN302 + compensation request",
+      "tags": ["cancellation", "rebooking", "SN301", "compensation"],
+      "created_at": "2026-04-26 06:45:00",
+      "updated_at": "2026-04-29 17:10:00",
+      "resolution": "Rebooked on SN302 same cabin (Business). Issued $200 travel voucher.",
+      "messages": [
+        {"from": "customer", "at": "2026-04-26 06:45:00", "text": "Stuck at BOM after SN301 cancellation. Need same-day rebooking and compensation for hotel and missed meeting."},
+        {"from": "agent", "at": "2026-04-26 08:30:00", "text": "Rebooked on SN302 departing 21:30. Upgraded back to Business in same fare class."},
+        {"from": "agent", "at": "2026-04-29 17:10:00", "text": "Voucher SKY-VCH-882001 issued for USD 200. Resolved."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1003",
+      "customer_id": 23,
+      "booking_reference": "SKYS45F6JV",
+      "category": "Complaint",
+      "priority": "Medium",
+      "status": "Resolved",
+      "subject": "Lack of communication when SN301 was cancelled",
+      "tags": ["cancellation", "communication", "SN301"],
+      "created_at": "2026-04-27 12:00:00",
+      "updated_at": "2026-05-01 09:45:00",
+      "resolution": "Acknowledged process gap. 5,000 SkyNova miles credited as goodwill.",
+      "messages": [
+        {"from": "customer", "at": "2026-04-27 12:00:00", "text": "I was not informed about SN301 cancellation until I reached the airport. Found out from the agent at the gate. Unacceptable."},
+        {"from": "agent", "at": "2026-05-01 09:45:00", "text": "We sincerely apologise. Our SMS gateway had an outage that morning. Issued 5,000 miles to your account."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1004",
+      "customer_id": 12,
+      "booking_reference": "SKYM3E4PL",
+      "category": "Other",
+      "priority": "High",
+      "status": "Open",
+      "subject": "Disputing NoShow status on SN401 - check-in app crashed",
+      "tags": ["noshow", "app-issue", "SN401", "dispute"],
+      "created_at": "2026-05-01 11:55:00",
+      "updated_at": "2026-05-04 16:00:00",
+      "messages": [
+        {"from": "customer", "at": "2026-05-01 11:55:00", "text": "I was at the gate at DEL but the SkyNova mobile app would not load my boarding pass. Counter agent told me boarding had closed. Marked NoShow but I was physically present."},
+        {"from": "agent", "at": "2026-05-02 10:00:00", "text": "Investigating with the airport ops team. Pulling CCTV from gate area to confirm presence."},
+        {"from": "customer", "at": "2026-05-04 16:00:00", "text": "Any update? My ticket value was 980 USD and you marked me NoShow."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1005",
+      "customer_id": 3,
+      "booking_reference": "SKY9C2L4N",
+      "category": "Complaint",
+      "priority": "High",
+      "status": "Resolved",
+      "subject": "SN401 delay caused missed connection at JFK",
+      "tags": ["delay", "missed-connection", "SN401", "compensation"],
+      "created_at": "2026-05-01 13:20:00",
+      "updated_at": "2026-05-03 11:00:00",
+      "resolution": "15,000 SkyNova miles + USD 150 meal voucher issued.",
+      "messages": [
+        {"from": "customer", "at": "2026-05-01 13:20:00", "text": "SN401 was delayed 2hrs. I missed my onward Boston connection on a partner airline. Had to overnight at JFK at my own cost."},
+        {"from": "agent", "at": "2026-05-02 09:30:00", "text": "Verified ATC delay on departure. Eligible for compensation under our delay policy as you are a Silver tier member."},
+        {"from": "agent", "at": "2026-05-03 11:00:00", "text": "Issued 15,000 miles and a USD 150 meal voucher. Hotel reimbursement requires receipts - please reply with attachments."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1006",
+      "customer_id": 24,
+      "booking_reference": "SKYT56G7KW",
+      "category": "Baggage",
+      "priority": "Medium",
+      "status": "Resolved",
+      "subject": "Baggage delivered 36hrs late after SN401 delay",
+      "tags": ["baggage", "delay", "SN401"],
+      "created_at": "2026-05-02 22:10:00",
+      "updated_at": "2026-05-04 09:00:00",
+      "resolution": "Bag located and delivered. USD 100 essentials reimbursement approved.",
+      "messages": [
+        {"from": "customer", "at": "2026-05-02 22:10:00", "text": "Bag did not arrive at JFK with SN401. Need clothes and toiletries reimbursement."},
+        {"from": "agent", "at": "2026-05-04 09:00:00", "text": "Bag delivered to your hotel 03 May 18:00. Reimbursement of USD 100 approved per policy."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1007",
+      "customer_id": 1,
+      "booking_reference": "SKY7A2K9F",
+      "category": "Loyalty",
+      "priority": "Medium",
+      "status": "InProgress",
+      "subject": "Missing miles for SN101/SN102 round trip",
+      "tags": ["loyalty", "miles-missing", "platinum"],
+      "created_at": "2026-04-22 08:30:00",
+      "updated_at": "2026-05-05 14:20:00",
+      "messages": [
+        {"from": "customer", "at": "2026-04-22 08:30:00", "text": "I flew SN101 on 15 April and SN102 on 17 April in Business. Miles for both segments are still missing from my Platinum account."},
+        {"from": "agent", "at": "2026-04-25 11:00:00", "text": "Raised with loyalty backoffice. Bookings confirmed flown. ETA to credit: 5-7 business days."},
+        {"from": "customer", "at": "2026-05-05 14:20:00", "text": "Still nothing credited. Following up."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1008",
+      "customer_id": 2,
+      "booking_reference": "SKYM2P8VR",
+      "category": "Other",
+      "priority": "Low",
+      "status": "Resolved",
+      "subject": "Seat selection for SN601 (DEL-NRT)",
+      "tags": ["seat-selection", "SN601"],
+      "created_at": "2026-04-15 10:00:00",
+      "updated_at": "2026-04-15 10:25:00",
+      "resolution": "Seat changed from 7B to 7A (window) at no charge.",
+      "messages": [
+        {"from": "customer", "at": "2026-04-15 10:00:00", "text": "Can I switch from middle seat 7B to a window? Long flight, would help."},
+        {"from": "agent", "at": "2026-04-15 10:25:00", "text": "Done. New seat 7A. Confirmation emailed."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1009",
+      "customer_id": 13,
+      "booking_reference": "SKYA4H5KF",
+      "category": "SpecialAssistance",
+      "priority": "High",
+      "status": "InProgress",
+      "subject": "Wheelchair assistance request for SN801 (BOM-DXB) on 20 May",
+      "tags": ["special-assistance", "wheelchair", "SN801"],
+      "created_at": "2026-05-02 19:40:00",
+      "updated_at": "2026-05-07 11:00:00",
+      "messages": [
+        {"from": "customer", "at": "2026-05-02 19:40:00", "text": "Travelling with my mother who needs wheelchair from kerbside to gate. Booking SKYA4H5KF."},
+        {"from": "agent", "at": "2026-05-07 11:00:00", "text": "Logged WCHR request with BOM ground services. Confirmation 24hrs prior to departure."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1010",
+      "customer_id": 7,
+      "booking_reference": "SKYY7K3MN",
+      "category": "SpecialAssistance",
+      "priority": "Low",
+      "status": "Resolved",
+      "subject": "Special meal: vegetarian, no nuts - SN601",
+      "tags": ["special-meal", "allergy", "SN601"],
+      "created_at": "2026-04-30 15:11:00",
+      "updated_at": "2026-04-30 16:00:00",
+      "resolution": "VGML with no-nuts notation added to PNR. Galley briefed.",
+      "messages": [
+        {"from": "customer", "at": "2026-04-30 15:11:00", "text": "Severe nut allergy. Need vegetarian meal with absolutely no nuts on SN601 First Class."},
+        {"from": "agent", "at": "2026-04-30 16:00:00", "text": "Done. VGML loaded with allergy flag. Cabin crew will be notified at briefing."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1011",
+      "customer_id": 4,
+      "booking_reference": "SKYE4D8XR",
+      "category": "Baggage",
+      "priority": "Medium",
+      "status": "InProgress",
+      "subject": "Damaged baggage on arrival from SN102",
+      "tags": ["baggage", "damage", "claim", "SN102"],
+      "created_at": "2026-04-18 04:30:00",
+      "updated_at": "2026-05-02 10:00:00",
+      "messages": [
+        {"from": "customer", "at": "2026-04-18 04:30:00", "text": "Suitcase handle was snapped off when I collected at DEL. Reported at the baggage desk, given reference DEL-BAG-22884."},
+        {"from": "agent", "at": "2026-04-25 09:00:00", "text": "Claim filed. Please share photos and original purchase receipt for valuation."},
+        {"from": "customer", "at": "2026-04-30 18:00:00", "text": "Photos and receipt attached. Bag was 250 GBP from John Lewis."},
+        {"from": "agent", "at": "2026-05-02 10:00:00", "text": "Received. Forwarded to claims for assessment, expect outcome within 14 days."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1012",
+      "customer_id": 14,
+      "booking_reference": null,
+      "category": "Refund",
+      "priority": "Low",
+      "status": "Resolved",
+      "subject": "Cancellation fee dispute - booking made within 24hr window",
+      "tags": ["refund", "policy", "24hr-rule"],
+      "created_at": "2026-04-12 16:22:00",
+      "updated_at": "2026-04-13 11:30:00",
+      "resolution": "Confirmed booking cancelled within 24hrs of issue. Fee waived per policy.",
+      "messages": [
+        {"from": "customer", "at": "2026-04-12 16:22:00", "text": "I cancelled within 24hrs of booking but you charged me a 50 GBP fee. Pretty sure that's against your own policy."},
+        {"from": "agent", "at": "2026-04-13 11:30:00", "text": "You are correct. Fee refunded to original card. Apologies for the error."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1013",
+      "customer_id": 9,
+      "booking_reference": "SKYO9V6JT",
+      "category": "Other",
+      "priority": "Medium",
+      "status": "InProgress",
+      "subject": "Lost item - blue jacket left in seat pocket on SN401",
+      "tags": ["lost-and-found", "SN401"],
+      "created_at": "2026-05-01 17:45:00",
+      "updated_at": "2026-05-06 09:00:00",
+      "messages": [
+        {"from": "customer", "at": "2026-05-01 17:45:00", "text": "I left a navy blue Patagonia jacket in seat 33B on SN401 (DEL-JFK 01 May). Please check lost and found."},
+        {"from": "agent", "at": "2026-05-06 09:00:00", "text": "Aircraft VT-SNE has been on rotation. Cleaning crew at JFK had no log. Checking BOM cleaning records next."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1014",
+      "customer_id": 11,
+      "booking_reference": "SKYI2R3ZX",
+      "category": "Loyalty",
+      "priority": "Medium",
+      "status": "Resolved",
+      "subject": "Upgrade voucher not honoured at check-in",
+      "tags": ["loyalty", "upgrade", "voucher"],
+      "created_at": "2026-05-05 02:30:00",
+      "updated_at": "2026-05-06 14:00:00",
+      "resolution": "Counter agent error. Voucher reinstated. 10,000 miles goodwill.",
+      "messages": [
+        {"from": "customer", "at": "2026-05-05 02:30:00", "text": "Tried to use my Gold tier upgrade voucher at BOM check-in for SN501. Agent said it had expired - but valid till August per my account."},
+        {"from": "agent", "at": "2026-05-06 14:00:00", "text": "Voucher status verified valid. Counter agent referenced wrong record. Voucher reinstated, 10,000 miles credited."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1015",
+      "customer_id": 6,
+      "booking_reference": "SKYS6F1HN",
+      "category": "Complaint",
+      "priority": "Low",
+      "status": "Resolved",
+      "subject": "Wifi did not work entire SN501 flight",
+      "tags": ["wifi", "ife", "SN501"],
+      "created_at": "2026-05-05 09:30:00",
+      "updated_at": "2026-05-06 12:00:00",
+      "resolution": "Confirmed wifi outage on tail VT-SND that day. 5,000 miles credited.",
+      "messages": [
+        {"from": "customer", "at": "2026-05-05 09:30:00", "text": "Paid for premium wifi on SN501 BOM-CDG, never connected. Six hour flight without internet."},
+        {"from": "agent", "at": "2026-05-06 12:00:00", "text": "System logs confirm outage. Wifi fee refunded plus 5,000 miles for inconvenience."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1016",
+      "customer_id": 21,
+      "booking_reference": "SKYN23D4GS",
+      "category": "Loyalty",
+      "priority": "Low",
+      "status": "Resolved",
+      "subject": "Lounge access denied at JFK despite Platinum status",
+      "tags": ["loyalty", "lounge", "platinum"],
+      "created_at": "2026-05-03 19:00:00",
+      "updated_at": "2026-05-04 10:00:00",
+      "resolution": "Lounge staff system was offline. Coached. Apology issued.",
+      "messages": [
+        {"from": "customer", "at": "2026-05-03 19:00:00", "text": "Showed up at the SkyNova partner lounge JFK Terminal 4 for SN402. Was turned away despite my Platinum card. Embarrassing."},
+        {"from": "agent", "at": "2026-05-04 10:00:00", "text": "Lounge eligibility system was offline at the time. Apologies. Sent feedback to partner. Issued you a guest lounge pass for next visit."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1017",
+      "customer_id": 17,
+      "booking_reference": "SKYH8Z9LM",
+      "category": "SpecialAssistance",
+      "priority": "Low",
+      "status": "Resolved",
+      "subject": "Travelling with small dog - need fees and crate specs",
+      "tags": ["pets", "info-request", "SN601"],
+      "created_at": "2026-04-28 21:00:00",
+      "updated_at": "2026-04-29 08:00:00",
+      "resolution": "Provided fees and approved crate dimensions. Customer to confirm 48hrs prior.",
+      "messages": [
+        {"from": "customer", "at": "2026-04-28 21:00:00", "text": "I have a 6kg Shih Tzu. Can he travel in cabin on SN601 to NRT? What's the fee?"},
+        {"from": "agent", "at": "2026-04-29 08:00:00", "text": "Yes, in-cabin pet allowed up to 8kg total (pet+carrier). Fee USD 125 per segment. Carrier max dims 43 x 30 x 19 cm soft-sided. Confirm 48hrs prior with vet certificate."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1018",
+      "customer_id": 22,
+      "booking_reference": "SKYO34E5HV",
+      "category": "Complaint",
+      "priority": "Low",
+      "status": "Resolved",
+      "subject": "Vegetarian meal not loaded on SN102",
+      "tags": ["meal", "SN102"],
+      "created_at": "2026-04-18 04:00:00",
+      "updated_at": "2026-04-19 11:00:00",
+      "resolution": "Catering miss confirmed. 3,000 miles credited.",
+      "messages": [
+        {"from": "customer", "at": "2026-04-18 04:00:00", "text": "Pre-ordered VGML on SN102 LHR-DEL. Crew said no veg meal loaded. Had to eat the bread roll."},
+        {"from": "agent", "at": "2026-04-19 11:00:00", "text": "Catering record shows VGML was ordered but not loaded due to a packing error. 3,000 miles credited."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1019",
+      "customer_id": 15,
+      "booking_reference": "SKYC6N7WT",
+      "category": "FlightChange",
+      "priority": "Low",
+      "status": "Open",
+      "subject": "Request to waive change fee for date change",
+      "tags": ["change-fee", "waiver"],
+      "created_at": "2026-05-07 18:30:00",
+      "updated_at": "2026-05-07 18:30:00",
+      "messages": [
+        {"from": "customer", "at": "2026-05-07 18:30:00", "text": "Need to change return SN502 to a later date due to family emergency. Asking you to waive the change fee."}
+      ]
+    },
+    {
+      "ticket_id": "TCK-1020",
+      "customer_id": 19,
+      "booking_reference": "SKYL01B2ZP",
+      "category": "SpecialAssistance",
+      "priority": "Medium",
+      "status": "InProgress",
+      "subject": "Unaccompanied minor service for daughter on SN801",
+      "tags": ["unaccompanied-minor", "SN801"],
+      "created_at": "2026-05-04 14:20:00",
+      "updated_at": "2026-05-07 09:00:00",
+      "messages": [
+        {"from": "customer", "at": "2026-05-04 14:20:00", "text": "My 11 year old will fly SN801 BOM-DXB on 20 May. Please arrange UM service. Pickup at DXB by her uncle."},
+        {"from": "agent", "at": "2026-05-07 09:00:00", "text": "UM form sent for signature. Service fee USD 100. Pickup contact must show ID matching name on form."}
+      ]
+    }
+  ],
+
+  "flight_reviews": [
+    {"review_id": "REV-2001", "customer_id": 1,  "flight_number": "SN101", "booking_reference": "SKY7A2K9F", "rating": 5, "verified_passenger": true,  "aspects": {"seat": 5, "food": 5, "crew": 5, "entertainment": 4, "punctuality": 5}, "title": "Flawless Business cabin", "comment": "Best Business class I've had in a year. Crew remembered my name on the second meal service.", "posted_at": "2026-04-17 06:00:00"},
+    {"review_id": "REV-2002", "customer_id": 1,  "flight_number": "SN102", "booking_reference": "SKY7A2K9G", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 5, "food": 4, "crew": 5, "entertainment": 3, "punctuality": 4}, "title": "Solid eastbound", "comment": "Entertainment library is dated. Otherwise very good.", "posted_at": "2026-04-19 12:30:00"},
+    {"review_id": "REV-2003", "customer_id": 4,  "flight_number": "SN101", "booking_reference": "SKYE4D8XQ", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 4, "food": 4, "crew": 5, "entertainment": 4, "punctuality": 5}, "title": "Premium Economy worth it", "comment": "Comfortable seat, decent food. Crew very polite.", "posted_at": "2026-04-17 09:00:00"},
+    {"review_id": "REV-2004", "customer_id": 4,  "flight_number": "SN102", "booking_reference": "SKYE4D8XR", "rating": 3, "verified_passenger": true,  "aspects": {"seat": 4, "food": 3, "crew": 5, "entertainment": 3, "punctuality": 4}, "title": "Bag arrived broken", "comment": "Flight itself was fine but my suitcase handle was snapped off on arrival. Filed a claim.", "posted_at": "2026-04-19 10:00:00"},
+    {"review_id": "REV-2005", "customer_id": 14, "flight_number": "SN101", "booking_reference": "SKYB5T6QM", "rating": 3, "verified_passenger": true,  "aspects": {"seat": 3, "food": 3, "crew": 4, "entertainment": 3, "punctuality": 5}, "title": "Standard Economy", "comment": "Got me there on time. Legroom is tight on the A350.", "posted_at": "2026-04-17 11:30:00"},
+    {"review_id": "REV-2006", "customer_id": 14, "flight_number": "SN102", "booking_reference": "SKYB5T6QN", "rating": 3, "verified_passenger": true,  "aspects": {"seat": 3, "food": 3, "crew": 4, "entertainment": 3, "punctuality": 4}, "title": "OK return leg", "comment": "Same as outbound. Nothing remarkable.", "posted_at": "2026-04-19 14:00:00"},
+    {"review_id": "REV-2007", "customer_id": 22, "flight_number": "SN101", "booking_reference": "SKYO34E5HU", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 3, "food": 4, "crew": 5, "entertainment": 4, "punctuality": 5}, "title": "Great crew", "comment": "Crew went above and beyond when my screen wasn't working. Moved me to an empty row.", "posted_at": "2026-04-17 10:20:00"},
+    {"review_id": "REV-2008", "customer_id": 22, "flight_number": "SN102", "booking_reference": "SKYO34E5HV", "rating": 1, "verified_passenger": true,  "aspects": {"seat": 3, "food": 1, "crew": 4, "entertainment": 3, "punctuality": 4}, "title": "No veg meal loaded", "comment": "Pre-ordered VGML and they didn't have it. Hungry whole flight. SkyNova credited miles after I complained but please don't let this happen.", "posted_at": "2026-04-19 13:00:00"},
+    {"review_id": "REV-2009", "customer_id": 2,  "flight_number": "SN201", "booking_reference": "SKY3B7M2H", "rating": 5, "verified_passenger": true,  "aspects": {"seat": 4, "food": 4, "crew": 5, "entertainment": null, "punctuality": 5}, "title": "Quick and smooth", "comment": "Short hop, no IFE on the 737 but didn't matter. On time both ways.", "posted_at": "2026-04-23 09:00:00"},
+    {"review_id": "REV-2010", "customer_id": 2,  "flight_number": "SN202", "booking_reference": "SKY3B7M2J", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 4, "food": 3, "crew": 4, "entertainment": null, "punctuality": 4}, "title": "Fine", "comment": "Slight delay on departure. Made it up in the air.", "posted_at": "2026-04-23 09:05:00"},
+    {"review_id": "REV-2011", "customer_id": 13, "flight_number": "SN201", "booking_reference": "SKYA4H5KD", "rating": 5, "verified_passenger": true,  "aspects": {"seat": 5, "food": 5, "crew": 5, "entertainment": null, "punctuality": 5}, "title": "First class on a short hop", "comment": "Even on a 2.5hr 737 segment they treated First class properly. Excellent.", "posted_at": "2026-04-21 18:00:00"},
+    {"review_id": "REV-2012", "customer_id": 13, "flight_number": "SN202", "booking_reference": "SKYA4H5KE", "rating": 5, "verified_passenger": true,  "aspects": {"seat": 5, "food": 5, "crew": 5, "entertainment": null, "punctuality": 5}, "title": "Consistent", "comment": "Same crew chief, same standard. Always my preferred carrier on this route.", "posted_at": "2026-04-23 14:00:00"},
+    {"review_id": "REV-2013", "customer_id": 20, "flight_number": "SN201", "booking_reference": "SKYM12C3FT", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 3, "food": 3, "crew": 5, "entertainment": null, "punctuality": 5}, "title": "Good value", "comment": "Cheaper than the legacy carriers and crew was super friendly.", "posted_at": "2026-04-21 12:00:00"},
+    {"review_id": "REV-2014", "customer_id": 20, "flight_number": "SN202", "booking_reference": "SKYM12C3FU", "rating": 3, "verified_passenger": true,  "aspects": {"seat": 3, "food": 2, "crew": 4, "entertainment": null, "punctuality": 4}, "title": "Sandwich was stale", "comment": "Snack box could be better. Otherwise OK.", "posted_at": "2026-04-23 06:00:00"},
+    {"review_id": "REV-2015", "customer_id": 8,  "flight_number": "SN302", "booking_reference": "SKYM8C5RW", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 4, "food": 4, "crew": 5, "entertainment": 4, "punctuality": 4}, "title": "Recovery flight after SN301 cancel", "comment": "After my SN301 cancellation drama, the SN302 crew was a class apart. Made up for the bad start.", "posted_at": "2026-04-27 02:00:00"},
+    {"review_id": "REV-2016", "customer_id": 3,  "flight_number": "SN401", "booking_reference": "SKY9C2L4N", "rating": 2, "verified_passenger": true,  "aspects": {"seat": 3, "food": 3, "crew": 4, "entertainment": 4, "punctuality": 1}, "title": "2hr delay killed my connection", "comment": "Plane was nice. The 2 hour ATC delay cost me a hotel night at JFK and a missed onward flight. Compensation came eventually.", "posted_at": "2026-05-02 23:00:00"},
+    {"review_id": "REV-2017", "customer_id": 9,  "flight_number": "SN401", "booking_reference": "SKYO9V6JT", "rating": 3, "verified_passenger": true,  "aspects": {"seat": 3, "food": 3, "crew": 4, "entertainment": 4, "punctuality": 1}, "title": "Delay and lost item", "comment": "Big delay, plus I left my jacket in the seat pocket and they still haven't found it. Crew was kind though.", "posted_at": "2026-05-03 10:00:00"},
+    {"review_id": "REV-2018", "customer_id": 21, "flight_number": "SN401", "booking_reference": "SKYN23D4GR", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 5, "food": 4, "crew": 5, "entertainment": 5, "punctuality": 2}, "title": "Business class softened the delay", "comment": "Yes there was a 2hr delay. But Business cabin and crew were excellent. Lounge was a different story (separate complaint).", "posted_at": "2026-05-02 04:00:00"},
+    {"review_id": "REV-2019", "customer_id": 24, "flight_number": "SN401", "booking_reference": "SKYT56G7KW", "rating": 2, "verified_passenger": true,  "aspects": {"seat": 4, "food": 4, "crew": 4, "entertainment": 4, "punctuality": 1}, "title": "Delay + bag lost = bad combo", "comment": "Premium Economy was nice. But the delay plus losing my bag for 36 hours soured the whole trip.", "posted_at": "2026-05-04 12:00:00"},
+    {"review_id": "REV-2020", "customer_id": 18, "flight_number": "SN401", "booking_reference": "SKYIV0A1KE", "rating": 3, "verified_passenger": true,  "aspects": {"seat": 3, "food": 3, "crew": 4, "entertainment": 4, "punctuality": 1}, "title": "Long but ok", "comment": "Delay was poorly communicated. Otherwise the flight itself was fine.", "posted_at": "2026-05-02 08:00:00"},
+    {"review_id": "REV-2021", "customer_id": 21, "flight_number": "SN402", "booking_reference": "SKYN23D4GS", "rating": 5, "verified_passenger": true,  "aspects": {"seat": 5, "food": 5, "crew": 5, "entertainment": 5, "punctuality": 5}, "title": "Best westbound I've had", "comment": "On time. Caviar service. Enough said.", "posted_at": "2026-05-04 22:00:00"},
+    {"review_id": "REV-2022", "customer_id": 24, "flight_number": "SN402", "booking_reference": "SKYT56G7KX", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 4, "food": 4, "crew": 5, "entertainment": 4, "punctuality": 5}, "title": "Recovered the trip", "comment": "Outbound was rough but the return was excellent. Bumped my opinion back up.", "posted_at": "2026-05-04 22:30:00"},
+    {"review_id": "REV-2023", "customer_id": 3,  "flight_number": "SN402", "booking_reference": "SKY9C2L4P", "rating": 3, "verified_passenger": true,  "aspects": {"seat": 3, "food": 3, "crew": 4, "entertainment": 4, "punctuality": 5}, "title": "Better than outbound", "comment": "On time at least. Economy meals could use work.", "posted_at": "2026-05-05 06:00:00"},
+    {"review_id": "REV-2024", "customer_id": 6,  "flight_number": "SN501", "booking_reference": "SKYS6F1HN", "rating": 1, "verified_passenger": true,  "aspects": {"seat": 4, "food": 4, "crew": 4, "entertainment": 1, "punctuality": 5}, "title": "Wifi never worked - paid for it!", "comment": "Six hour flight. Bought wifi at boarding. It NEVER connected. They refunded after I complained but please test the system before charging people.", "posted_at": "2026-05-05 10:00:00"},
+    {"review_id": "REV-2025", "customer_id": 11, "flight_number": "SN501", "booking_reference": "SKYI2R3ZX", "rating": 5, "verified_passenger": true,  "aspects": {"seat": 5, "food": 5, "crew": 5, "entertainment": 4, "punctuality": 5}, "title": "Business class is fantastic", "comment": "Lie-flat seat, fantastic Italian wine selection, attentive crew. Wifi was iffy though.", "posted_at": "2026-05-05 11:00:00"},
+    {"review_id": "REV-2026", "customer_id": 15, "flight_number": "SN501", "booking_reference": "SKYC6N7WS", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 4, "food": 4, "crew": 5, "entertainment": 3, "punctuality": 5}, "title": "Premium Economy good value", "comment": "Crew very pleasant. IFE selection limited.", "posted_at": "2026-05-05 12:00:00"},
+    {"review_id": "REV-2027", "customer_id": 25, "flight_number": "SN501", "booking_reference": "SKYZ67H8LX", "rating": 4, "verified_passenger": true,  "aspects": {"seat": 3, "food": 4, "crew": 5, "entertainment": 3, "punctuality": 5}, "title": "Solid Economy", "comment": "Got home on time. Crew memorable. Would fly again.", "posted_at": "2026-05-05 13:00:00"}
+  ],
+
+  "user_activity_logs": [
+    {"log_id": "LOG-3001", "customer_id": 1,  "event_type": "login",            "device": "ios", "session_id": "sess-aarav-9001", "timestamp": "2026-05-08 06:30:12", "data": {"ip": "203.0.113.10", "city": "Mumbai"}},
+    {"log_id": "LOG-3002", "customer_id": 1,  "event_type": "view_booking",     "device": "ios", "session_id": "sess-aarav-9001", "timestamp": "2026-05-08 06:30:45", "data": {"booking_reference": "SKYJ4N1QA"}},
+    {"log_id": "LOG-3003", "customer_id": 1,  "event_type": "search",           "device": "ios", "session_id": "sess-aarav-9001", "timestamp": "2026-05-08 06:32:11", "data": {"origin": "DEL", "destination": "DXB", "depart_date": "2026-06-10", "cabin": "Business"}},
+    {"log_id": "LOG-3004", "customer_id": 1,  "event_type": "page_view",        "device": "ios", "session_id": "sess-aarav-9001", "timestamp": "2026-05-08 06:33:02", "data": {"page": "loyalty/missing-miles", "ticket_id": "TCK-1007"}},
+    {"log_id": "LOG-3005", "customer_id": 2,  "event_type": "login",            "device": "android", "session_id": "sess-priya-9101", "timestamp": "2026-05-07 22:10:00", "data": {"ip": "203.0.113.55", "city": "Bangalore"}},
+    {"log_id": "LOG-3006", "customer_id": 2,  "event_type": "check_in",         "device": "android", "session_id": "sess-priya-9101", "timestamp": "2026-05-07 22:11:34", "data": {"booking_reference": "SKYM2P8VR", "flight_number": "SN601", "seat": "7A"}},
+    {"log_id": "LOG-3007", "customer_id": 3,  "event_type": "file_ticket",      "device": "web", "session_id": "sess-jw-9201", "timestamp": "2026-05-01 13:20:00", "data": {"ticket_id": "TCK-1005", "category": "Complaint"}},
+    {"log_id": "LOG-3008", "customer_id": 3,  "event_type": "leave_review",     "device": "web", "session_id": "sess-jw-9202", "timestamp": "2026-05-02 23:00:00", "data": {"review_id": "REV-2016", "flight_number": "SN401", "rating": 2}},
+    {"log_id": "LOG-3009", "customer_id": 4,  "event_type": "login",            "device": "web", "session_id": "sess-emma-9301", "timestamp": "2026-05-02 10:00:00", "data": {"ip": "198.51.100.4"}},
+    {"log_id": "LOG-3010", "customer_id": 4,  "event_type": "page_view",        "device": "web", "session_id": "sess-emma-9301", "timestamp": "2026-05-02 10:01:30", "data": {"page": "claims/baggage", "ticket_id": "TCK-1011"}},
+    {"log_id": "LOG-3011", "customer_id": 5,  "event_type": "file_ticket",      "device": "web", "session_id": "sess-liam-9401", "timestamp": "2026-04-26 09:14:00", "data": {"ticket_id": "TCK-1001", "category": "Refund"}},
+    {"log_id": "LOG-3012", "customer_id": 5,  "event_type": "login",            "device": "web", "session_id": "sess-liam-9402", "timestamp": "2026-05-06 11:00:00", "data": {"ip": "192.0.2.5"}},
+    {"log_id": "LOG-3013", "customer_id": 5,  "event_type": "page_view",        "device": "web", "session_id": "sess-liam-9402", "timestamp": "2026-05-06 11:22:00", "data": {"page": "ticket/TCK-1001"}},
+    {"log_id": "LOG-3014", "customer_id": 6,  "event_type": "leave_review",     "device": "ios", "session_id": "sess-sofia-9501", "timestamp": "2026-05-05 10:00:00", "data": {"review_id": "REV-2024", "flight_number": "SN501", "rating": 1}},
+    {"log_id": "LOG-3015", "customer_id": 7,  "event_type": "search",           "device": "web", "session_id": "sess-yuki-9601", "timestamp": "2026-05-08 04:00:00", "data": {"origin": "NRT", "destination": "SIN", "depart_date": "2026-07-01", "cabin": "First"}},
+    {"log_id": "LOG-3016", "customer_id": 7,  "event_type": "view_flight",      "device": "web", "session_id": "sess-yuki-9601", "timestamp": "2026-05-08 04:01:30", "data": {"flight_number": "SN601", "depart_date": "2026-05-09"}},
+    {"log_id": "LOG-3017", "customer_id": 8,  "event_type": "redeem_miles",     "device": "android", "session_id": "sess-marcus-9701", "timestamp": "2026-05-04 16:00:00", "data": {"miles_redeemed": 25000, "reward": "lounge_pass_pair"}},
+    {"log_id": "LOG-3018", "customer_id": 9,  "event_type": "file_ticket",      "device": "ios", "session_id": "sess-olivia-9801", "timestamp": "2026-05-01 17:45:00", "data": {"ticket_id": "TCK-1013", "category": "Other"}},
+    {"log_id": "LOG-3019", "customer_id": 10, "event_type": "search",           "device": "web", "session_id": "sess-noah-9901", "timestamp": "2026-05-07 18:00:00", "data": {"origin": "SYD", "destination": "DEL", "depart_date": "2026-08-15", "cabin": "Economy"}},
+    {"log_id": "LOG-3020", "customer_id": 11, "event_type": "check_in",         "device": "ios", "session_id": "sess-isabella-1001", "timestamp": "2026-05-06 10:00:00", "data": {"booking_reference": "SKYI2R3ZY", "flight_number": "SN502", "seat": "4C"}},
+    {"log_id": "LOG-3021", "customer_id": 12, "event_type": "file_ticket",      "device": "android", "session_id": "sess-mateo-1101", "timestamp": "2026-05-01 11:55:00", "data": {"ticket_id": "TCK-1004", "category": "Other"}},
+    {"log_id": "LOG-3022", "customer_id": 13, "event_type": "login",            "device": "ios", "session_id": "sess-aisha-1201", "timestamp": "2026-05-08 08:00:00", "data": {"ip": "203.0.113.99", "city": "Dubai"}},
+    {"log_id": "LOG-3023", "customer_id": 13, "event_type": "view_booking",     "device": "ios", "session_id": "sess-aisha-1201", "timestamp": "2026-05-08 08:00:45", "data": {"booking_reference": "SKYA4H5KF"}},
+    {"log_id": "LOG-3024", "customer_id": 13, "event_type": "page_view",        "device": "ios", "session_id": "sess-aisha-1201", "timestamp": "2026-05-08 08:02:10", "data": {"page": "special-assistance/wheelchair", "ticket_id": "TCK-1009"}},
+    {"log_id": "LOG-3025", "customer_id": 14, "event_type": "cancel_booking",   "device": "web", "session_id": "sess-ben-1301", "timestamp": "2026-04-12 16:20:00", "data": {"booking_reference": "TEMP-XXX", "reason": "schedule_conflict", "refund_status": "fee_charged_then_waived"}},
+    {"log_id": "LOG-3026", "customer_id": 15, "event_type": "file_ticket",      "device": "web", "session_id": "sess-chloe-1401", "timestamp": "2026-05-07 18:30:00", "data": {"ticket_id": "TCK-1019", "category": "FlightChange"}},
+    {"log_id": "LOG-3027", "customer_id": 16, "event_type": "search",           "device": "web", "session_id": "sess-daniel-1501", "timestamp": "2026-05-08 11:00:00", "data": {"origin": "FRA", "destination": "DEL", "depart_date": "2026-09-12", "cabin": "Business"}},
+    {"log_id": "LOG-3028", "customer_id": 16, "event_type": "view_flight",      "device": "web", "session_id": "sess-daniel-1501", "timestamp": "2026-05-08 11:02:00", "data": {"flight_number": "SN701"}},
+    {"log_id": "LOG-3029", "customer_id": 17, "event_type": "file_ticket",      "device": "ios", "session_id": "sess-hana-1601", "timestamp": "2026-04-28 21:00:00", "data": {"ticket_id": "TCK-1017", "category": "SpecialAssistance"}},
+    {"log_id": "LOG-3030", "customer_id": 18, "event_type": "leave_review",     "device": "web", "session_id": "sess-ivan-1701", "timestamp": "2026-05-02 08:00:00", "data": {"review_id": "REV-2020", "flight_number": "SN401", "rating": 3}},
+    {"log_id": "LOG-3031", "customer_id": 19, "event_type": "file_ticket",      "device": "web", "session_id": "sess-lucia-1801", "timestamp": "2026-05-04 14:20:00", "data": {"ticket_id": "TCK-1020", "category": "SpecialAssistance"}},
+    {"log_id": "LOG-3032", "customer_id": 20, "event_type": "login",            "device": "android", "session_id": "sess-maya-1901", "timestamp": "2026-05-07 09:00:00", "data": {"ip": "203.0.113.20"}},
+    {"log_id": "LOG-3033", "customer_id": 20, "event_type": "search",           "device": "android", "session_id": "sess-maya-1901", "timestamp": "2026-05-07 09:01:30", "data": {"origin": "DEL", "destination": "BOM", "depart_date": "2026-06-05", "cabin": "Economy"}},
+    {"log_id": "LOG-3034", "customer_id": 21, "event_type": "file_ticket",      "device": "ios", "session_id": "sess-nathan-2001", "timestamp": "2026-05-03 19:00:00", "data": {"ticket_id": "TCK-1016", "category": "Loyalty"}},
+    {"log_id": "LOG-3035", "customer_id": 21, "event_type": "leave_review",     "device": "ios", "session_id": "sess-nathan-2002", "timestamp": "2026-05-04 22:00:00", "data": {"review_id": "REV-2021", "flight_number": "SN402", "rating": 5}},
+    {"log_id": "LOG-3036", "customer_id": 22, "event_type": "leave_review",     "device": "web", "session_id": "sess-oliver-2101", "timestamp": "2026-04-19 13:00:00", "data": {"review_id": "REV-2008", "flight_number": "SN102", "rating": 1}},
+    {"log_id": "LOG-3037", "customer_id": 23, "event_type": "file_ticket",      "device": "web", "session_id": "sess-sara-2201", "timestamp": "2026-04-27 12:00:00", "data": {"ticket_id": "TCK-1003", "category": "Complaint"}},
+    {"log_id": "LOG-3038", "customer_id": 24, "event_type": "file_ticket",      "device": "web", "session_id": "sess-thomas-2301", "timestamp": "2026-05-02 22:10:00", "data": {"ticket_id": "TCK-1006", "category": "Baggage"}},
+    {"log_id": "LOG-3039", "customer_id": 25, "event_type": "login",            "device": "ios", "session_id": "sess-zoe-2401", "timestamp": "2026-05-08 07:00:00", "data": {"ip": "198.51.100.99"}},
+    {"log_id": "LOG-3040", "customer_id": 25, "event_type": "view_booking",     "device": "ios", "session_id": "sess-zoe-2401", "timestamp": "2026-05-08 07:00:45", "data": {"booking_reference": "SKYZ67H8LY"}}
+  ]
+}
