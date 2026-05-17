@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { ChatResponse, ToolCall } from "./api";
 import { sendMessage } from "./api";
+import Landing from "./Landing";
 
 interface Message {
   role: "user" | "assistant";
@@ -61,6 +62,7 @@ function ToolCallCard({ tc }: { tc: ToolCall }) {
 }
 
 export default function App() {
+  const [showChat, setShowChat] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -114,6 +116,8 @@ export default function App() {
     day: "numeric",
     year: "numeric",
   });
+
+  if (!showChat) return <Landing onEnter={() => setShowChat(true)} />;
 
   return (
     <div className="flex h-screen font-sans text-sm overflow-hidden">
@@ -192,7 +196,15 @@ export default function App() {
       <div className="flex flex-col flex-1 bg-[#F5F0E8] overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-3 border-b border-black/10 bg-[#F5F0E8]/80 backdrop-blur">
-          <span className="font-semibold text-[#1c1c1c]">Conversation</span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowChat(false)}
+              className="text-xs text-[#1c1c1c]/40 hover:text-[#1c1c1c]/70 transition"
+            >
+              ← Back
+            </button>
+            <span className="font-semibold text-[#1c1c1c]">Conversation</span>
+          </div>
           <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider">
             {(["POSTGRES", "MONGO", "RAG"] as const).map((db) => (
               <span key={db} className="flex items-center gap-1">
