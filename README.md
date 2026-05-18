@@ -6,6 +6,12 @@ A full-stack AI agent that answers questions about an electronics store by routi
 
 ---
 
+## Demo
+
+[![One Question. Three Databases. One Grounded Answer. | VoltIQ Concierge Demo](https://img.youtube.com/vi/-bxtMOn3GHU/maxresdefault.jpg)](https://www.youtube.com/watch?v=-bxtMOn3GHU)
+
+---
+
 ## Quick Start
 
 ```bash
